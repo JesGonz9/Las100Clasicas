@@ -3,3 +3,5 @@ dist
 .env
 *.local
 .vite
+specs.md
+cors.json
