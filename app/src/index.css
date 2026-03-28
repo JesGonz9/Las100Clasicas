@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1e40af;
+  --color-primary-dark: #1e3a8a;
+  --color-secondary: #d97706;
+  --color-accent: #059669;
+  --color-danger: #dc2626;
+}
+
+html {
+  overflow-y: scroll;
+}
+
+button, [role="button"], a, select, summary, label[for], input[type="checkbox"], input[type="radio"] {
+  cursor: pointer;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-image: url('/bg.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(3px);
+  z-index: -1;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-white/80 text-gray-800 px-4 py-2 rounded-lg font-medium hover:bg-white transition-colors border border-gray-200;
+  }
+
+  .btn-danger {
+    @apply bg-danger text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors;
+  }
+
+  .card {
+    @apply bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-white/60 p-4;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg bg-white/90 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors placeholder:text-gray-400 placeholder:italic;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+}

@@ -1,0 +1,1 @@
+export { NewAscentPage } from './NewAscentPage'
