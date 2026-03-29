@@ -15,11 +15,12 @@ import {
   deleteWall,
   getAchievements,
   createAchievement,
+  updateAchievement,
   deleteAchievement,
   getAllUsers,
 } from '@/services/firebase'
 import { Spinner } from '@/components'
-import type { Route, Zone, Wall, Achievement } from '@/models'
+import type { Route, Zone, Wall, Achievement, AchievementType } from '@/models'
 
 type Tab = 'routes' | 'zones' | 'walls' | 'achievements' | 'users' | 'import'
 
@@ -254,7 +255,7 @@ function RoutesAdmin() {
                   <h3 className="font-semibold truncate">{r.name}</h3>
                   {(zone || wall) && (
                     <p className="text-xs text-gray-500 truncate">
-                      {zone?.name}{wall ? ` · ${wall.name}` : ''}
+                      {wall?.name}{zone ? ` · ${zone.name}` : ''}
                     </p>
                   )}
                 </div>
@@ -616,28 +617,90 @@ function WallsAdmin() {
   )
 }
 
+const ACHIEVEMENT_TYPE_LABELS: Record<AchievementType, string> = {
+  ascent_count: 'Nº de ascensiones',
+  zone_count: 'Nº de zonas',
+  route_specific: 'Vías específicas',
+  all_routes: 'Todas las vías (100)',
+}
+
+const ICON_OPTIONS = ['🏔️', '⛰️', '🧗', '🥇', '🥈', '🥉', '🏆', '⭐', '🔥', '💎', '🎯', '👑', '🦅', '🐐', '💪', '🌟']
+
 function AchievementsAdmin() {
   const [achievements, setAchievements] = useState<Achievement[]>([])
+  const [routes, setRoutes] = useState<Route[]>([])
   const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+
+  // Create form state
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [condition, setCondition] = useState('')
+  const [icon, setIcon] = useState('🏔️')
+  const [type, setType] = useState<AchievementType>('ascent_count')
+  const [threshold, setThreshold] = useState('')
+  const [points, setPoints] = useState('')
+  const [selectedRouteIds, setSelectedRouteIds] = useState<string[]>([])
+  const [routeSearch, setRouteSearch] = useState('')
+
+  // Edit form state
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editIcon, setEditIcon] = useState('🏔️')
+  const [editType, setEditType] = useState<AchievementType>('ascent_count')
+  const [editThreshold, setEditThreshold] = useState('')
+  const [editPoints, setEditPoints] = useState('')
+  const [editSelectedRouteIds, setEditSelectedRouteIds] = useState<string[]>([])
+  const [editRouteSearch, setEditRouteSearch] = useState('')
 
   useEffect(() => {
-    getAchievements().then((a) => {
+    Promise.all([getAchievements(), getRoutes()]).then(([a, r]) => {
       setAchievements(a)
+      setRoutes(r.routes)
       setLoading(false)
     })
   }, [])
 
+  function resetForm() {
+    setName(''); setDescription(''); setIcon('🏔️'); setType('ascent_count')
+    setThreshold(''); setPoints(''); setSelectedRouteIds([]); setRouteSearch('')
+  }
+
   async function handleCreate(e: FormEvent) {
     e.preventDefault()
-    await createAchievement({ name, description, condition })
+    const data: Omit<Achievement, 'id'> = {
+      name: name.trim(), description: description.trim(), icon, type,
+      points: parseInt(points) || 0,
+      ...(type === 'ascent_count' || type === 'zone_count' ? { threshold: parseInt(threshold) || 0 } : {}),
+      ...(type === 'route_specific' ? { routeIds: selectedRouteIds } : {}),
+    }
+    await createAchievement(data)
     const updated = await getAchievements()
     setAchievements(updated)
-    setName('')
-    setDescription('')
-    setCondition('')
+    resetForm()
+    setShowForm(false)
+  }
+
+  function startEdit(a: Achievement) {
+    if (editingId === a.id) { setEditingId(null); return }
+    setEditingId(a.id)
+    setEditName(a.name); setEditDescription(a.description); setEditIcon(a.icon || '🏔️')
+    setEditType(a.type || 'ascent_count'); setEditThreshold(String(a.threshold ?? ''))
+    setEditPoints(String(a.points ?? 0)); setEditSelectedRouteIds(a.routeIds ?? [])
+    setEditRouteSearch('')
+  }
+
+  async function handleSave(id: string) {
+    const data: Partial<Achievement> = {
+      name: editName.trim(), description: editDescription.trim(), icon: editIcon, type: editType,
+      points: parseInt(editPoints) || 0,
+      threshold: editType === 'ascent_count' || editType === 'zone_count' ? parseInt(editThreshold) || 0 : undefined,
+      routeIds: editType === 'route_specific' ? editSelectedRouteIds : undefined,
+    }
+    await updateAchievement(id, data)
+    const updated = await getAchievements()
+    setAchievements(updated)
+    setEditingId(null)
   }
 
   async function handleDelete(id: string) {
@@ -645,30 +708,173 @@ function AchievementsAdmin() {
     setAchievements(achievements.filter((a) => a.id !== id))
   }
 
+  function toggleRouteId(routeId: string, isEdit: boolean) {
+    if (isEdit) {
+      setEditSelectedRouteIds((prev) =>
+        prev.includes(routeId) ? prev.filter((r) => r !== routeId) : [...prev, routeId]
+      )
+    } else {
+      setSelectedRouteIds((prev) =>
+        prev.includes(routeId) ? prev.filter((r) => r !== routeId) : [...prev, routeId]
+      )
+    }
+  }
+
+  function RouteSelector({ selected, search, onSearchChange, onToggle }: {
+    selected: string[]; search: string; onSearchChange: (v: string) => void; onToggle: (id: string) => void
+  }) {
+    const filtered = routes.filter((r) =>
+      !search.trim() || r.name.toLowerCase().includes(search.toLowerCase())
+    )
+    return (
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Vías especiales ({selected.length} seleccionadas)</label>
+        <input className="input text-sm mb-2" placeholder="Buscar vía..." value={search} onChange={(e) => onSearchChange(e.target.value)} />
+        <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg">
+          {filtered.map((r) => (
+            <label key={r.id} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 text-sm">
+              <input type="checkbox" checked={selected.includes(r.id)} onChange={() => onToggle(r.id)} />
+              <span className={selected.includes(r.id) ? 'font-medium text-primary' : ''}>{r.name}</span>
+              {r.difficulty.free && <span className="text-xs text-gray-400 ml-auto">{r.difficulty.free}</span>}
+            </label>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  function TypeFields({ type, threshold, onThresholdChange, isEdit, selected, search, onSearchChange, onToggle }: {
+    type: AchievementType; threshold: string; onThresholdChange: (v: string) => void; isEdit: boolean
+    selected: string[]; search: string; onSearchChange: (v: string) => void; onToggle: (id: string) => void
+  }) {
+    if (type === 'ascent_count') return (
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Nº de vías distintas</label>
+        <input className="input" type="number" min="1" placeholder="Ej: 10" value={threshold} onChange={(e) => onThresholdChange(e.target.value)} required />
+      </div>
+    )
+    if (type === 'zone_count') return (
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Nº de zonas distintas</label>
+        <input className="input" type="number" min="1" placeholder="Ej: 5" value={threshold} onChange={(e) => onThresholdChange(e.target.value)} required />
+      </div>
+    )
+    if (type === 'route_specific') return (
+      <RouteSelector selected={selected} search={search} onSearchChange={onSearchChange} onToggle={onToggle} />
+    )
+    return <p className="text-sm text-gray-500 italic">Se desbloquea al escalar las 100 vías del libro</p>
+  }
+
   if (loading) return <div className="flex items-center justify-center min-h-[50vh]"><Spinner /></div>
 
   return (
     <div>
-      <form onSubmit={handleCreate} className="card mb-4 space-y-3">
-        <input className="input" placeholder="Ej: Nombre del logro" value={name} onChange={(e) => setName(e.target.value)} required />
-        <input className="input" placeholder="Ej: Escalar 10 vías" value={description} onChange={(e) => setDescription(e.target.value)} required />
-        <input className="input" placeholder="Ej: ascents >= 10" value={condition} onChange={(e) => setCondition(e.target.value)} required />
-        <button type="submit" className="btn-primary flex items-center gap-2">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Logros ({achievements.length})</h2>
+        <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center gap-2">
           <Plus className="h-4 w-4" />
-          Crear logro
+          Añadir logro
+          <ChevronDown className={`h-4 w-4 transition-transform ${showForm ? 'rotate-180' : ''}`} />
         </button>
-      </form>
+      </div>
 
-      <div className="space-y-2">
-        {achievements.map((a) => (
-          <div key={a.id} className="card flex items-center justify-between">
+      {showForm && (
+        <form onSubmit={handleCreate} className="card mt-3 space-y-3">
+          <div className="flex gap-3">
             <div>
-              <p className="font-medium">{a.name}</p>
-              <p className="text-sm text-gray-500">{a.description}</p>
+              <label className="block text-xs font-medium text-gray-500 mb-1">Icono</label>
+              <div className="flex flex-wrap gap-1">
+                {ICON_OPTIONS.map((emoji) => (
+                  <button key={emoji} type="button" onClick={() => setIcon(emoji)}
+                    className={`text-xl p-1 rounded ${icon === emoji ? 'bg-primary/20 ring-2 ring-primary' : 'hover:bg-gray-100'}`}
+                  >{emoji}</button>
+                ))}
+              </div>
             </div>
-            <button onClick={() => handleDelete(a.id)} className="text-gray-400 hover:text-danger transition-colors">
-              <Trash2 className="h-4 w-4" />
-            </button>
+          </div>
+          <input className="input" placeholder="Ej: Explorador" value={name} onChange={(e) => setName(e.target.value)} required />
+          <input className="input" placeholder="Ej: Escala vías en 5 zonas distintas" value={description} onChange={(e) => setDescription(e.target.value)} required />
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
+              <select className="input" value={type} onChange={(e) => setType(e.target.value as AchievementType)}>
+                {Object.entries(ACHIEVEMENT_TYPE_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div className="w-28">
+              <label className="block text-xs font-medium text-gray-500 mb-1">Puntos bonus</label>
+              <input className="input" type="number" min="0" placeholder="Ej: 50" value={points} onChange={(e) => setPoints(e.target.value)} required />
+            </div>
+          </div>
+          <TypeFields type={type} threshold={threshold} onThresholdChange={setThreshold} isEdit={false}
+            selected={selectedRouteIds} search={routeSearch} onSearchChange={setRouteSearch} onToggle={(id) => toggleRouteId(id, false)} />
+          <div className="flex gap-2">
+            <button type="submit" className="btn-primary">Crear</button>
+            <button type="button" onClick={() => { setShowForm(false); resetForm() }} className="btn-secondary">Cancelar</button>
+          </div>
+        </form>
+      )}
+
+      <div className="space-y-2 mt-4">
+        {achievements.map((a) => (
+          <div key={a.id} className="card overflow-hidden cursor-pointer" onClick={() => startEdit(a)}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-1">
+                <span className="text-2xl">{a.icon || '🏔️'}</span>
+                <div>
+                  <p className="font-medium">{a.name}</p>
+                  <p className="text-sm text-gray-500">{a.description}</p>
+                  <div className="flex gap-2 mt-1 flex-wrap">
+                    <span className="text-xs badge bg-blue-100 text-blue-800">{ACHIEVEMENT_TYPE_LABELS[a.type] ?? a.type}</span>
+                    {a.points > 0 && <span className="text-xs badge bg-yellow-100 text-yellow-800">+{a.points} pts</span>}
+                    {(a.type === 'ascent_count' || a.type === 'zone_count') && a.threshold && (
+                      <span className="text-xs badge bg-gray-100 text-gray-700">Meta: {a.threshold}</span>
+                    )}
+                    {a.type === 'route_specific' && a.routeIds && (
+                      <span className="text-xs badge bg-purple-100 text-purple-800">{a.routeIds.length} vías</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button onClick={(e) => { e.stopPropagation(); handleDelete(a.id) }} className="text-gray-400 hover:text-danger transition-colors">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+            {editingId === a.id && (
+              <div onClick={(e) => e.stopPropagation()} className="mt-3 pt-3 border-t border-gray-100 space-y-3">
+                <div className="flex flex-wrap gap-1">
+                  {ICON_OPTIONS.map((emoji) => (
+                    <button key={emoji} type="button" onClick={() => setEditIcon(emoji)}
+                      className={`text-xl p-1 rounded ${editIcon === emoji ? 'bg-primary/20 ring-2 ring-primary' : 'hover:bg-gray-100'}`}
+                    >{emoji}</button>
+                  ))}
+                </div>
+                <input className="input" value={editName} onChange={(e) => setEditName(e.target.value)} required />
+                <input className="input" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} required />
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
+                    <select className="input" value={editType} onChange={(e) => setEditType(e.target.value as AchievementType)}>
+                      {Object.entries(ACHIEVEMENT_TYPE_LABELS).map(([k, v]) => (
+                        <option key={k} value={k}>{v}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-28">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Puntos bonus</label>
+                    <input className="input" type="number" min="0" value={editPoints} onChange={(e) => setEditPoints(e.target.value)} />
+                  </div>
+                </div>
+                <TypeFields type={editType} threshold={editThreshold} onThresholdChange={setEditThreshold} isEdit={true}
+                  selected={editSelectedRouteIds} search={editRouteSearch} onSearchChange={setEditRouteSearch} onToggle={(id) => toggleRouteId(id, true)} />
+                <div className="flex gap-2">
+                  <button onClick={() => handleSave(a.id)} className="btn-primary">Guardar cambios</button>
+                  <button onClick={() => setEditingId(null)} className="btn-secondary">Cancelar</button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>

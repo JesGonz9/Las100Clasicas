@@ -160,7 +160,7 @@ export function MapPage() {
                 className="w-full text-left p-2 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <p className="text-sm font-medium truncate">{route.name}</p>
-                {(zone || wall) && <p className="text-xs text-gray-500 truncate">{zone?.name}{wall ? ` · ${wall.name}` : ''}</p>}
+                {(zone || wall) && <p className="text-xs text-gray-500 truncate">{wall?.name}{zone ? ` · ${zone.name}` : ''}</p>}
               </button>
             )
           })}

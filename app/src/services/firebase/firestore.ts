@@ -205,6 +205,10 @@ export async function deleteAchievement(id: string) {
   return deleteDoc(doc(db, 'achievements', id))
 }
 
+export async function updateAchievement(id: string, data: Partial<Achievement>) {
+  return updateDoc(doc(db, 'achievements', id), data)
+}
+
 export async function getUserAchievements(userId: string): Promise<UserAchievement[]> {
   const q = query(collection(db, 'userAchievements'), where('userId', '==', userId))
   const snap = await getDocs(q)
@@ -217,6 +221,55 @@ export async function unlockAchievement(userId: string, achievementId: string) {
     achievementId,
     unlockedAt: Timestamp.now(),
   })
+}
+
+export async function checkAchievements(userId: string): Promise<Achievement[]> {
+  const [allAchievements, userAchievements, ascentsData, routes, zones] = await Promise.all([
+    getAchievements(),
+    getUserAchievements(userId),
+    getAscents(undefined, userId),
+    getRoutes(),
+    getZones(),
+  ])
+
+  const unlockedIds = new Set(userAchievements.map((ua) => ua.achievementId))
+  const userAscents = ascentsData.ascents
+  const ascendedRouteIds = new Set(userAscents.map((a) => a.routeId))
+  const ascendedZoneIds = new Set(
+    userAscents
+      .map((a) => routes.routes.find((r) => r.id === a.routeId)?.zoneId)
+      .filter(Boolean) as string[],
+  )
+
+  const newlyUnlocked: Achievement[] = []
+
+  for (const achievement of allAchievements) {
+    if (unlockedIds.has(achievement.id)) continue
+
+    let completed = false
+
+    switch (achievement.type) {
+      case 'ascent_count':
+        completed = ascendedRouteIds.size >= (achievement.threshold ?? 0)
+        break
+      case 'zone_count':
+        completed = ascendedZoneIds.size >= (achievement.threshold ?? 0)
+        break
+      case 'route_specific':
+        completed = (achievement.routeIds ?? []).every((rid) => ascendedRouteIds.has(rid))
+        break
+      case 'all_routes':
+        completed = routes.routes.length > 0 && routes.routes.every((r) => ascendedRouteIds.has(r.id))
+        break
+    }
+
+    if (completed) {
+      await unlockAchievement(userId, achievement.id)
+      newlyUnlocked.push(achievement)
+    }
+  }
+
+  return newlyUnlocked
 }
 
 export async function getAllUsers(): Promise<User[]> {

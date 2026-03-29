@@ -76,11 +76,17 @@ export interface Notification {
   createdAt: Timestamp
 }
 
+export type AchievementType = 'ascent_count' | 'zone_count' | 'route_specific' | 'all_routes'
+
 export interface Achievement {
   id: string
   name: string
   description: string
-  condition: string
+  icon: string
+  type: AchievementType
+  threshold?: number
+  routeIds?: string[]
+  points: number
 }
 
 export interface UserAchievement {

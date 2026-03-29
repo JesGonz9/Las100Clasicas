@@ -108,7 +108,7 @@ export function RouteDetailPage() {
               className="text-white/80 flex items-center gap-1 mt-1 text-sm hover:text-white transition-colors"
             >
               <MapPin className="h-4 w-4" />
-              {zone.name}{wall ? ` · ${wall.name}` : ''}
+              {wall ? `${wall.name} · ` : ''}{zone.name}
             </button>
           )}
         </div>
