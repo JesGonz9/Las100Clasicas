@@ -1,4 +1,5 @@
 export { Spinner, FullPageSpinner } from './Spinner'
+export { BackgroundCarousel } from './BackgroundCarousel'
 export { ProtectedRoute } from './ProtectedRoute'
 export { BottomNav } from './BottomNav'
 export { Sidebar } from './Sidebar'

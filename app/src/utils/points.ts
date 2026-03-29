@@ -22,7 +22,7 @@ const GRADE_POINTS: Record<string, number> = {
 }
 
 export function getGradePoints(grade: string): number {
-  if (!grade) return 0
+  if (!grade || !grade.trim()) return 0
   const normalized = grade.trim().toLowerCase()
   for (const [key, value] of Object.entries(GRADE_POINTS)) {
     if (key.toLowerCase() === normalized) return value
