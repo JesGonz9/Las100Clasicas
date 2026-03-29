@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
-import { createAscent } from '@/services/firebase/firestore'
+import { ArrowLeft, Trophy } from 'lucide-react'
+import { createAscent, checkAchievements } from '@/services/firebase/firestore'
 import { useAuth } from '@/hooks'
 import { Timestamp } from 'firebase/firestore'
+import type { Achievement } from '@/models'
 
 export function NewAscentPage() {
   const { routeId } = useParams<{ routeId: string }>()
@@ -15,6 +16,7 @@ export function NewAscentPage() {
   const [partners, setPartners] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [newAchievements, setNewAchievements] = useState<Achievement[]>([])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -43,6 +45,13 @@ export function NewAscentPage() {
         photos: [],
       })
 
+      const unlocked = await checkAchievements(user.id)
+      if (unlocked.length > 0) {
+        setNewAchievements(unlocked)
+        setLoading(false)
+        return
+      }
+
       navigate(`/routes/${routeId}`)
     } catch (err) {
       console.error('Error al registrar ascensión:', err)
@@ -50,6 +59,28 @@ export function NewAscentPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (newAchievements.length > 0) {
+    return (
+      <div className="p-4 max-w-lg mx-auto text-center">
+        <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+        <h1 className="text-2xl font-bold mb-2">¡Logro desbloqueado!</h1>
+        <div className="space-y-3 mb-6">
+          {newAchievements.map((a) => (
+            <div key={a.id} className="card bg-yellow-50 border-yellow-200">
+              <span className="text-3xl">{a.icon || '🏔️'}</span>
+              <p className="font-bold mt-1">{a.name}</p>
+              <p className="text-sm text-gray-600">{a.description}</p>
+              {a.points > 0 && <p className="text-sm font-medium text-yellow-700 mt-1">+{a.points} puntos</p>}
+            </div>
+          ))}
+        </div>
+        <button onClick={() => navigate(`/routes/${routeId}`)} className="btn-primary w-full">
+          Continuar
+        </button>
+      </div>
+    )
   }
 
   return (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, UserPlus, UserMinus, Users } from 'lucide-react'
+import { Search, UserPlus, UserMinus, Users, Trophy } from 'lucide-react'
 import { useAuth } from '@/hooks'
 import {
   searchUsers,
@@ -10,9 +10,14 @@ import {
   unfollowUser,
   getUserProfile,
   getRoute,
+  getRoutes,
+  getAllUsers,
+  getUserAchievements,
+  getAchievements,
 } from '@/services/firebase'
 import { Spinner, EmptyState } from '@/components'
-import type { User, Ascent, Route } from '@/models'
+import { calculateAscentPoints } from '@/utils'
+import type { User, Ascent, Route, Achievement } from '@/models'
 
 interface FeedItem {
   ascent: Ascent
@@ -28,7 +33,7 @@ export function SocialPage() {
   const [searching, setSearching] = useState(false)
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [loadingFeed, setLoadingFeed] = useState(true)
-  const [tab, setTab] = useState<'feed' | 'search'>('feed')
+  const [tab, setTab] = useState<'feed' | 'search' | 'ranking'>('feed')
 
   // Load following IDs and feed
   useEffect(() => {
@@ -103,6 +108,14 @@ export function SocialPage() {
           }`}
         >
           Buscar usuarios
+        </button>
+        <button
+          onClick={() => setTab('ranking')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            tab === 'ranking' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          Ranking
         </button>
       </div>
 
@@ -199,6 +212,118 @@ export function SocialPage() {
           )}
         </>
       )}
+
+      {tab === 'ranking' && <RankingTab />}
+    </div>
+  )
+}
+
+interface RankingEntry {
+  user: User
+  ascentPoints: number
+  achievementPoints: number
+  totalPoints: number
+  ascentCount: number
+  achievementCount: number
+}
+
+function RankingTab() {
+  const [ranking, setRanking] = useState<RankingEntry[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function load() {
+      const [users, routesData, allAchievements] = await Promise.all([
+        getAllUsers(),
+        getRoutes(),
+        getAchievements(),
+      ])
+      const routeMap = new Map(routesData.routes.map((r) => [r.id, r]))
+
+      const entries: RankingEntry[] = []
+      for (const user of users) {
+        const [ascentsData, userAchievements] = await Promise.all([
+          getAscents(undefined, user.id),
+          getUserAchievements(user.id),
+        ])
+
+        const ascendedRouteIds = new Set<string>()
+        let ascentPoints = 0
+        for (const ascent of ascentsData.ascents) {
+          if (ascendedRouteIds.has(ascent.routeId)) continue
+          ascendedRouteIds.add(ascent.routeId)
+          const route = routeMap.get(ascent.routeId)
+          if (route) ascentPoints += calculateAscentPoints(route)
+        }
+
+        const unlockedIds = new Set(userAchievements.map((ua) => ua.achievementId))
+        let achievementPoints = 0
+        let achievementCount = 0
+        for (const ach of allAchievements) {
+          if (unlockedIds.has(ach.id)) {
+            achievementPoints += ach.points ?? 0
+            achievementCount++
+          }
+        }
+
+        entries.push({
+          user,
+          ascentPoints,
+          achievementPoints,
+          totalPoints: ascentPoints + achievementPoints,
+          ascentCount: ascendedRouteIds.size,
+          achievementCount,
+        })
+      }
+
+      entries.sort((a, b) => b.totalPoints - a.totalPoints)
+      setRanking(entries)
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
+
+  if (ranking.length === 0) return (
+    <EmptyState icon={<Trophy className="h-12 w-12" />} title="Sin ranking" description="Aún no hay usuarios con puntuación" />
+  )
+
+  const medals = ['🥇', '🥈', '🥉']
+
+  return (
+    <div className="space-y-2">
+      {ranking.map((entry, i) => (
+        <Link key={entry.user.id} to={`/profile/${entry.user.id}`} className="card block hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="w-8 text-center flex-shrink-0">
+              {i < 3 ? (
+                <span className="text-2xl">{medals[i]}</span>
+              ) : (
+                <span className="text-sm font-bold text-gray-400">{i + 1}</span>
+              )}
+            </div>
+            {entry.user.photoURL ? (
+              <img src={entry.user.photoURL} alt="" className="h-10 w-10 rounded-full object-cover flex-shrink-0" />
+            ) : (
+              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0">
+                {entry.user.username?.[0]?.toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm truncate">{entry.user.username}</p>
+              <div className="flex gap-3 text-xs text-gray-500">
+                <span>{entry.ascentCount} vías</span>
+                <span>{entry.achievementCount} logros</span>
+              </div>
+            </div>
+            <div className="text-right flex-shrink-0">
+              <p className="font-bold text-primary">{entry.totalPoints}</p>
+              <p className="text-xs text-gray-400">puntos</p>
+            </div>
+          </div>
+        </Link>
+      ))}
     </div>
   )
 }

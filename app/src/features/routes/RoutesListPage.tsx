@@ -401,7 +401,7 @@ function RouteCard({ route, zones, walls, compact, index, ascended }: { route: R
             </div>
             {(zone || wall) && (
               <p className="text-xs text-gray-500 truncate">
-                {zone?.name}{wall ? ` · ${wall.name}` : ''}
+                {wall?.name}{zone ? ` · ${zone.name}` : ''}
               </p>
             )}
           </div>
