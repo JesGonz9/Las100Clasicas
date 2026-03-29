@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signIn, signInWithGoogle } from '@/services/firebase'
 import { Mountain } from 'lucide-react'
+import { BackgroundCarousel } from '@/components/BackgroundCarousel'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -39,8 +40,7 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
-      <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: "url('/bg.webp')" }} />
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+      <BackgroundCarousel overlay="bg-black/50 backdrop-blur-[2px]" fixed={false} />
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
           <Mountain className="h-12 w-12 text-white mx-auto mb-3" />
