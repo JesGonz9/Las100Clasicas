@@ -20,6 +20,7 @@ import {
   getAllUsers,
 } from '@/services/firebase'
 import { Spinner } from '@/components'
+import { WallsMapAdmin } from './WallsMapAdmin'
 import type { Route, Zone, Wall, Achievement, AchievementType } from '@/models'
 
 type Tab = 'routes' | 'zones' | 'walls' | 'achievements' | 'users' | 'import'
@@ -459,6 +460,15 @@ function WallsAdmin() {
   const [editName, setEditName] = useState('')
   const [editZoneId, setEditZoneId] = useState('')
   const [editCoords, setEditCoords] = useState('')
+  const [mapEditId, setMapEditId] = useState<string | null>(null)
+  async function handleSetCoords(wallId: string, lat: number, lng: number) {
+    await updateWall(wallId, {
+      coordinates: { lat, lng },
+    })
+    const updated = await getWalls()
+    setWalls(updated)
+    setMapEditId(null)
+  }
 
   useEffect(() => {
     Promise.all([getWalls(), getZones()]).then(([w, z]) => {
@@ -522,6 +532,12 @@ function WallsAdmin() {
 
   return (
     <div>
+      {mapEditId && (
+        <WallsMapAdmin
+          walls={walls}
+          onSetCoords={handleSetCoords}
+        />
+      )}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Paredes ({walls.length})</h2>
         <button
@@ -606,6 +622,9 @@ function WallsAdmin() {
                   <div className="flex gap-2">
                     <button onClick={() => handleSave(w.id)} className="btn-primary">Guardar cambios</button>
                     <button onClick={() => setEditingId(null)} className="btn-secondary">Cancelar</button>
+                    <button type="button" className="btn-secondary" onClick={() => setMapEditId(w.id)}>
+                      Editar en mapa
+                    </button>
                   </div>
                 </div>
               )}
