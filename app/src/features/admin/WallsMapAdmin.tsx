@@ -14,6 +14,7 @@ const wallIcon = new L.Icon({
   shadowSize: [41, 41],
 })
 
+
 interface WallsMapAdminProps {
   walls: Wall[]
   onSetCoords: (wallId: string, lat: number, lng: number) => void
@@ -28,13 +29,33 @@ function LocationSetter({ wallId, onSet }: { wallId: string, onSet: (lat: number
   return null
 }
 
+function AddWallMarker({ onAdd, disabled }: { onAdd: (lat: number, lng: number) => void, disabled: boolean }) {
+  useMapEvents({
+    click(e) {
+      if (!disabled) onAdd(e.latlng.lat, e.latlng.lng)
+    },
+  })
+  return null;
+}
+
 export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
   const [selected, setSelected] = useState<string | null>(null)
+  const [addCoords, setAddCoords] = useState<{ lat: number, lng: number } | null>(null);
+  const [addWallId, setAddWallId] = useState<string>('');
   const mapRef = useRef<any>(null)
 
+  // Limpiar marcador temporal si se inicia/cancela edición de una pared existente
+  function handleSelect(wallId: string | null) {
+    setSelected(wallId);
+    setAddCoords(null);
+    setAddWallId('');
+  }
+
   // Centrar el mapa en la península ibérica por defecto
-  const defaultCenter = [42.7, -2.9]
+  const defaultCenter: [number, number] = [42.7, -2.9]
   const defaultZoom = 6
+
+  const noCoords = walls.filter(w => !w.coordinates || !w.coordinates.lat || !w.coordinates.lng)
 
   return (
     <div className="w-full h-[500px] rounded-lg overflow-hidden border mb-8">
@@ -55,7 +76,10 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
               position={[w.coordinates.lat, w.coordinates.lng]}
               icon={wallIcon}
               eventHandlers={{
-                click: () => setSelected(w.id),
+                click: () => {
+                  if (selected === w.id) return;
+                  handleSelect(w.id);
+                },
               }}
             >
               <Popup>
@@ -64,12 +88,19 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
                   <br />
                   {w.coordinates.lat.toFixed(5)}, {w.coordinates.lng.toFixed(5)}
                   <br />
-                  <button
-                    className="btn-secondary mt-2"
-                    onClick={() => setSelected(w.id)}
-                  >
-                    Cambiar ubicación
-                  </button>
+                  {selected === w.id ? (
+                    <>
+                      <span className="text-xs text-danger block mb-2">Haz click en el mapa para elegir nueva ubicación</span>
+                      <button className="btn-secondary w-full" onClick={() => handleSelect(null)}>Cancelar</button>
+                    </>
+                  ) : (
+                    <button
+                      className="btn-secondary mt-2"
+                      onClick={() => handleSelect(w.id)}
+                    >
+                      Cambiar ubicación
+                    </button>
+                  )}
                 </div>
               </Popup>
             </Marker>
@@ -80,9 +111,55 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
             wallId={selected}
             onSet={(lat, lng) => {
               onSetCoords(selected, lat, lng)
-              setSelected(null)
+              handleSelect(null)
             }}
           />
+        )}
+        <AddWallMarker
+          onAdd={(lat, lng) => {
+            if (!selected && noCoords.length > 0) {
+              setAddCoords({ lat, lng });
+              setAddWallId('');
+            }
+          }}
+          disabled={!!selected || !!addCoords}
+        />
+        {addCoords && (
+          <Marker position={[addCoords.lat, addCoords.lng]} icon={wallIcon}>
+            <Popup autoPan>
+              <div className="space-y-2">
+                <div className="text-xs text-gray-500">Asignar a pared:</div>
+                <select
+                  className="input w-full"
+                  value={addWallId}
+                  onChange={e => setAddWallId(e.target.value)}
+                >
+                  <option value="">— Selecciona pared —</option>
+                  {noCoords.map(w => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
+                </select>
+                <div className="flex gap-2">
+                  <button
+                    className="btn-primary flex-1"
+                    disabled={!addWallId}
+                    onClick={async () => {
+                      if (addWallId) {
+                        await onSetCoords(addWallId, addCoords.lat, addCoords.lng);
+                        setAddCoords(null);
+                        setAddWallId('');
+                        setSelected(null);
+                      }
+                    }}
+                  >Aceptar</button>
+                  <button
+                    className="btn-secondary flex-1"
+                    onClick={() => { setAddCoords(null); setAddWallId(''); setSelected(null); }}
+                  >Cancelar</button>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
         )}
       </MapContainer>
     </div>
