@@ -45,6 +45,23 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
   const mapRef = useRef<any>(null)
   const addMarkerRef = useRef<any>(null)
 
+  useEffect(() => {
+    if (addCoords && addMarkerRef.current) {
+      try {
+        // Try to open the popup on the underlying Leaflet marker
+        const marker = addMarkerRef.current
+        if (typeof marker.openPopup === 'function') {
+          marker.openPopup()
+        } else if (marker.getPopup && marker._map) {
+          // fallback: open popup via map
+          const popup = marker.getPopup()
+          if (popup && marker._map) marker._map.openPopup(popup)
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [addCoords])
   // Limpiar marcador temporal si se inicia/cancela edición de una pared existente
   function handleSelect(wallId: string | null) {
     setSelected(wallId);
