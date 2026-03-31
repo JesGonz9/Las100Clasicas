@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -43,25 +43,6 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
   const [addCoords, setAddCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [addWallId, setAddWallId] = useState<string>('');
   const mapRef = useRef<any>(null)
-  const addMarkerRef = useRef<any>(null)
-
-  useEffect(() => {
-    if (addCoords && addMarkerRef.current) {
-      try {
-        // Try to open the popup on the underlying Leaflet marker
-        const marker = addMarkerRef.current
-        if (typeof marker.openPopup === 'function') {
-          marker.openPopup()
-        } else if (marker.getPopup && marker._map) {
-          // fallback: open popup via map
-          const popup = marker.getPopup()
-          if (popup && marker._map) marker._map.openPopup(popup)
-        }
-      } catch (e) {
-        // ignore
-      }
-    }
-  }, [addCoords])
   // Limpiar marcador temporal si se inicia/cancela edición de una pared existente
   function handleSelect(wallId: string | null) {
     setSelected(wallId);
@@ -140,12 +121,13 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
               setAddWallId('');
             }
           }}
-          disabled={!!selected || !!addCoords}
+          disabled={!!selected}
         />
         {addCoords && (
-          <Marker position={[addCoords.lat, addCoords.lng]} icon={wallIcon} ref={(m) => { addMarkerRef.current = m }}>
-            <Popup autoPan>
-              <div className="space-y-2">
+          <>
+            <Marker position={[addCoords.lat, addCoords.lng]} icon={wallIcon} />
+            <Popup position={[addCoords.lat, addCoords.lng]} autoPan closeOnClick={false}>
+              <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                 <div className="text-xs text-gray-500">Asignar a pared:</div>
                 <select
                   className="input w-full"
@@ -178,18 +160,8 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
                 </div>
               </div>
             </Popup>
-          </Marker>
+          </>
         )}
-        {/* Abrir el popup del marcador temporal al crearlo */}
-        {addCoords && addMarkerRef.current && (() => {
-          try {
-            // marker instance tiene .openPopup()
-            addMarkerRef.current.openPopup()
-          } catch (e) {
-            // noop
-          }
-          return null
-        })()}
       </MapContainer>
     </div>
   )
