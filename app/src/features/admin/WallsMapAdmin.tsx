@@ -91,12 +91,12 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
                   {selected === w.id ? (
                     <>
                       <span className="text-xs text-danger block mb-2">Haz click en el mapa para elegir nueva ubicación</span>
-                      <button className="btn-secondary w-full" onClick={() => handleSelect(null)}>Cancelar</button>
+                      <button className="btn-secondary w-full" onClick={(e) => { e.stopPropagation(); handleSelect(null); }}>Cancelar</button>
                     </>
                   ) : (
                     <button
                       className="btn-secondary mt-2"
-                      onClick={() => handleSelect(w.id)}
+                      onClick={(e) => { e.stopPropagation(); handleSelect(w.id); }}
                     >
                       Cambiar ubicación
                     </button>
@@ -143,7 +143,8 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
                   <button
                     className="btn-primary flex-1"
                     disabled={!addWallId}
-                    onClick={async () => {
+                    onClick={async (e) => {
+                      e.stopPropagation();
                       if (addWallId) {
                         await onSetCoords(addWallId, addCoords.lat, addCoords.lng);
                         setAddCoords(null);
@@ -154,7 +155,7 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
                   >Aceptar</button>
                   <button
                     className="btn-secondary flex-1"
-                    onClick={() => { setAddCoords(null); setAddWallId(''); setSelected(null); }}
+                    onClick={(e) => { e.stopPropagation(); setAddCoords(null); setAddWallId(''); setSelected(null); }}
                   >Cancelar</button>
                 </div>
               </div>
