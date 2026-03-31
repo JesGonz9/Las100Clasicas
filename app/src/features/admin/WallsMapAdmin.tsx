@@ -43,6 +43,7 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
   const [addCoords, setAddCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [addWallId, setAddWallId] = useState<string>('');
   const mapRef = useRef<any>(null)
+  const addMarkerRef = useRef<any>(null)
 
   // Limpiar marcador temporal si se inicia/cancela edición de una pared existente
   function handleSelect(wallId: string | null) {
@@ -125,7 +126,7 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
           disabled={!!selected || !!addCoords}
         />
         {addCoords && (
-          <Marker position={[addCoords.lat, addCoords.lng]} icon={wallIcon}>
+          <Marker position={[addCoords.lat, addCoords.lng]} icon={wallIcon} ref={(m) => { addMarkerRef.current = m }}>
             <Popup autoPan>
               <div className="space-y-2">
                 <div className="text-xs text-gray-500">Asignar a pared:</div>
@@ -162,6 +163,16 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
             </Popup>
           </Marker>
         )}
+        {/* Abrir el popup del marcador temporal al crearlo */}
+        {addCoords && addMarkerRef.current && (() => {
+          try {
+            // marker instance tiene .openPopup()
+            addMarkerRef.current.openPopup()
+          } catch (e) {
+            // noop
+          }
+          return null
+        })()}
       </MapContainer>
     </div>
   )
