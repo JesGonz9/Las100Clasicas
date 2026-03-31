@@ -20,7 +20,7 @@ interface WallsMapAdminProps {
   onSetCoords: (wallId: string, lat: number, lng: number) => void
 }
 
-function LocationSetter({ wallId, onSet }: { wallId: string, onSet: (lat: number, lng: number) => void }) {
+function LocationSetter({ onSet }: { onSet: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
       onSet(e.latlng.lat, e.latlng.lng)
@@ -42,7 +42,7 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
   const [selected, setSelected] = useState<string | null>(null)
   const [addCoords, setAddCoords] = useState<{ lat: number, lng: number } | null>(null);
   const [addWallId, setAddWallId] = useState<string>('');
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<L.Map | null>(null)
   // Limpiar marcador temporal si se inicia/cancela edición de una pared existente
   function handleSelect(wallId: string | null) {
     setSelected(wallId);
@@ -81,7 +81,7 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
                 },
               }}
             >
-              <Popup>
+              <Popup eventHandlers={{ remove: () => handleSelect(null) }}>
                 <div>
                   <strong>{w.name}</strong>
                   <br />
@@ -90,7 +90,7 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
                   {selected === w.id ? (
                     <>
                       <span className="text-xs text-danger block mb-2">Haz click en el mapa para elegir nueva ubicación</span>
-                      <button className="btn-secondary w-full" onClick={(e) => { e.stopPropagation(); handleSelect(null); }}>Cancelar</button>
+                          <button className="btn-secondary w-full" onClick={(e) => { e.stopPropagation(); handleSelect(null); mapRef.current?.closePopup?.(); }}>Cancelar</button>
                     </>
                   ) : (
                     <button
@@ -107,10 +107,11 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
         )}
         {selected && (
           <LocationSetter
-            wallId={selected}
             onSet={(lat, lng) => {
+              if (!selected) return;
               onSetCoords(selected, lat, lng)
               handleSelect(null)
+              mapRef.current?.closePopup?.();
             }}
           />
         )}
@@ -126,7 +127,7 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
         {addCoords && (
           <>
             <Marker position={[addCoords.lat, addCoords.lng]} icon={wallIcon} />
-            <Popup position={[addCoords.lat, addCoords.lng]} autoPan closeOnClick={false}>
+            <Popup position={[addCoords.lat, addCoords.lng]} autoPan closeOnClick={false} eventHandlers={{ remove: () => { setAddCoords(null); setAddWallId(''); setSelected(null); } }}>
               <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                 <div className="text-xs text-gray-500">Asignar a pared:</div>
                 <select
@@ -155,7 +156,7 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
                   >Aceptar</button>
                   <button
                     className="btn-secondary flex-1"
-                    onClick={(e) => { e.stopPropagation(); setAddCoords(null); setAddWallId(''); setSelected(null); }}
+                    onClick={(e) => { e.stopPropagation(); setAddCoords(null); setAddWallId(''); setSelected(null); mapRef.current?.closePopup?.(); }}
                   >Cancelar</button>
                 </div>
               </div>
