@@ -1,6 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@/hooks'
-import { Layout, ProtectedRoute, FullPageSpinner } from '@/components'
+import { Layout, ProtectedRoute, FullPageSpinner, AdminRoute } from '@/components'
 import { LoginPage, RegisterPage } from '@/features/auth'
 import { RoutesListPage, RouteDetailPage } from '@/features/routes'
 import { NewAscentPage } from '@/features/ascents'
@@ -40,7 +40,11 @@ export function App() {
         <Route path="/profile/edit" element={<EditProfilePage />} />
         <Route path="/profile/:userId" element={<ProfilePage />} />
         <Route path="/profile/:userId/:type" element={<FollowListPage />} />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin" element={
+          <AdminRoute>
+            <AdminPage />
+          </AdminRoute>
+        } />
       </Route>
 
       {/* Default redirect */}

@@ -13,7 +13,10 @@ export function useAuth() {
         if (!profile) {
           profile = await ensureUserProfile(fbUser.uid, fbUser.email ?? '')
         }
-        setUser(profile)
+        // Obtener custom claims del token
+        const tokenResult = await fbUser.getIdTokenResult()
+        const role = tokenResult.claims.role === 'admin' ? 'admin' : 'user'
+        setUser({ ...profile, role })
       } else {
         setFirebaseUser(null)
         setUser(null)
@@ -23,5 +26,5 @@ export function useAuth() {
     return unsub
   }, [setUser, setFirebaseUser, setLoading])
 
-  return { user, firebaseUser, loading, isAuthenticated: !!firebaseUser }
+  return { user, firebaseUser, loading, isAuthenticated: !!firebaseUser, isAdmin: user?.role === 'admin' }
 }

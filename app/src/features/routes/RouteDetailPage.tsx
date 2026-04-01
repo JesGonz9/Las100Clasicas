@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ExternalLink, MapPin, ArrowLeft, Plus, Star } from 'lucide-react'
-import { getRoute, getComments, addComment, getAscents, getZones, getWalls, getUserProfile } from '@/services/firebase'
+import { ExternalLink, MapPin, ArrowLeft, Plus, Star, CheckCircle, Trash2 } from 'lucide-react'
+import { getRoute, getComments, addComment, getAscents, getZones, getWalls, getUserProfile, deleteAscent } from '@/services/firebase'
 import { useAuth } from '@/hooks'
 import { Spinner } from '@/components'
 import type { Route, Comment as CommentType, Ascent, Zone, Wall, User as UserType } from '@/models'
@@ -20,6 +20,7 @@ export function RouteDetailPage() {
   const [loading, setLoading] = useState(true)
   const [commentText, setCommentText] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [deletingAscent, setDeletingAscent] = useState(false)
   const [tab, setTab] = useState<'info' | 'comments' | 'ascents'>('info')
 
   useEffect(() => {
@@ -55,6 +56,16 @@ export function RouteDetailPage() {
     }
     load()
   }, [id])
+
+  const myAscent = user ? ascents.find((a) => a.userId === user.id) : null
+
+  async function handleDeleteAscent() {
+    if (!myAscent) return
+    setDeletingAscent(true)
+    await deleteAscent(myAscent.id)
+    setAscents((prev) => prev.filter((a) => a.id !== myAscent.id))
+    setDeletingAscent(false)
+  }
 
   async function handleAddComment() {
     if (!commentText.trim() || !user || !id) return
@@ -101,14 +112,22 @@ export function RouteDetailPage() {
           <ArrowLeft className="h-5 w-5 text-white" />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-white">{route.name}</h1>
-          {zone && (
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-white">{route.name}</h1>
+            {myAscent && (
+              <span className="flex items-center gap-1 bg-green-500/80 text-white text-xs font-semibold px-2 py-1 rounded-full">
+                <CheckCircle className="h-3 w-3" />
+                Ascendida
+              </span>
+            )}
+          </div>
+          {zone && wall && (
             <button
-              onClick={() => navigate(`/map?search=${encodeURIComponent(zone.name)}`)}
+              onClick={() => navigate(`/map?wall=${wall.id}`)}
               className="text-white/80 flex items-center gap-1 mt-1 text-sm hover:text-white transition-colors"
             >
               <MapPin className="h-4 w-4" />
-              {wall ? `${wall.name} · ` : ''}{zone.name}
+              {wall.name} · {zone.name}
             </button>
           )}
         </div>
@@ -117,10 +136,21 @@ export function RouteDetailPage() {
       <div className="p-4">
         <div className="flex items-start justify-between mb-4">
           <div />
-          <Link to={`/routes/${route.id}/ascent/new`} className="btn-primary flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Ascensión
-          </Link>
+          {myAscent ? (
+            <button
+              onClick={handleDeleteAscent}
+              disabled={deletingAscent}
+              className="btn-secondary flex items-center gap-2 text-danger border-danger hover:bg-danger/10"
+            >
+              <Trash2 className="h-4 w-4" />
+              {deletingAscent ? 'Eliminando...' : 'Eliminar ascensión'}
+            </button>
+          ) : (
+            <Link to={`/routes/${route.id}/ascent/new`} className="btn-primary flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Añadir ascensión
+            </Link>
+          )}
         </div>
 
         {/* Difficulty badges */}

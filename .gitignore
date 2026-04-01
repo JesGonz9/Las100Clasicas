@@ -5,3 +5,7 @@ dist
 .vite
 specs.md
 cors.json
+serviceAccountKey.json
+*.firebase-adminsdk-*.json
+setUserRole.js
+clasicas-app-firebase-adminsdk-*.json
