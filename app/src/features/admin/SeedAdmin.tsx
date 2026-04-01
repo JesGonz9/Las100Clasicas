@@ -163,8 +163,159 @@ const SEED_ACHIEVEMENTS: Array<{
   },
 ]
 
+// ---------------------------------------------------------------------------
+// Logros reales de la aplicación (IDs fijos → idempotentes via setDoc)
+// 100 vías · 37 zonas
+// ---------------------------------------------------------------------------
+const REAL_ACHIEVEMENTS: Array<{
+  id: string
+  name: string
+  description: string
+  icon: string
+  type: AchievementType
+  threshold?: number
+  points: number
+}> = [
+  // ── Por número de vías (ascent_count) ─────────────────────────────────────
+  {
+    id: 'ach_primeros_pasos',
+    name: 'Primeros pasos',
+    description: '¡Completa tu primera vía de las 100 Clásicas!',
+    icon: '🎯',
+    type: 'ascent_count',
+    threshold: 1,
+    points: 10,
+  },
+  {
+    id: 'ach_cinco_clasicas',
+    name: 'Cinco Clásicas',
+    description: 'Ya tienes 5 vías en el saco. ¡No hay quien te pare!',
+    icon: '🌟',
+    type: 'ascent_count',
+    threshold: 5,
+    points: 25,
+  },
+  {
+    id: 'ach_la_decena',
+    name: 'La Decena',
+    description: '10 vías completadas. Escalador de clásicas en toda regla.',
+    icon: '🏔️',
+    type: 'ascent_count',
+    threshold: 10,
+    points: 50,
+  },
+  {
+    id: 'ach_cuarto_siglo',
+    name: 'Un Cuarto de Siglo',
+    description: '25 clásicas. La cuarta parte del camino recorrida, ¡sigue así!',
+    icon: '⛰️',
+    type: 'ascent_count',
+    threshold: 25,
+    points: 150,
+  },
+  {
+    id: 'ach_mitad_camino',
+    name: 'A Mitad de Camino',
+    description: 'Mitad del camino. 50 clásicas completadas. Leyenda en ciernes.',
+    icon: '🧗',
+    type: 'ascent_count',
+    threshold: 50,
+    points: 400,
+  },
+  {
+    id: 'ach_tres_cuartos',
+    name: 'Tres Cuartos del Camino',
+    description: '75 vías. Ya casi puedes ver la cima. ¡No te rindas ahora!',
+    icon: '💪',
+    type: 'ascent_count',
+    threshold: 75,
+    points: 700,
+  },
+  {
+    id: 'ach_las_100',
+    name: 'Las 100 Clásicas',
+    description: '¡Lo has logrado! Has completado las 100 vías clásicas. Eres una leyenda.',
+    icon: '🏆',
+    type: 'all_routes',
+    points: 1000,
+  },
+
+  // ── Por número de zonas (zone_count · 37 zonas en total) ──────────────────
+  {
+    id: 'ach_explorador',
+    name: 'Explorador',
+    description: 'Has escalado en 2 zonas distintas. ¡El mundo es tuyo!',
+    icon: '🗺️',
+    type: 'zone_count',
+    threshold: 2,
+    points: 30,
+  },
+  {
+    id: 'ach_aventurero',
+    name: 'Aventurero',
+    description: 'Has escalado en 5 zonas. Cada zona es un mundo nuevo por descubrir.',
+    icon: '🧭',
+    type: 'zone_count',
+    threshold: 5,
+    points: 75,
+  },
+  {
+    id: 'ach_viajero_roca',
+    name: 'Viajero de la Roca',
+    description: '10 zonas visitadas. La piedra no tiene secretos para ti.',
+    icon: '🌄',
+    type: 'zone_count',
+    threshold: 10,
+    points: 150,
+  },
+  {
+    id: 'ach_conocedor',
+    name: 'Conocedor del Territorio',
+    description: '15 zonas conquistadas. Conoces el terreno mejor que nadie.',
+    icon: '🏕️',
+    type: 'zone_count',
+    threshold: 15,
+    points: 250,
+  },
+  {
+    id: 'ach_nomada',
+    name: 'Nómada de las Cumbres',
+    description: '20 zonas. Un auténtico nómada de la roca, sin fronteras que te detengan.',
+    icon: '🌍',
+    type: 'zone_count',
+    threshold: 20,
+    points: 400,
+  },
+  {
+    id: 'ach_conquistador',
+    name: 'Conquistador',
+    description: '25 zonas conquistadas. Las rutas no conocen fronteras para ti.',
+    icon: '⚔️',
+    type: 'zone_count',
+    threshold: 25,
+    points: 600,
+  },
+  {
+    id: 'ach_embajador',
+    name: 'Embajador de las Zonas',
+    description: '30 zonas. Toda la geografía de las clásicas está en tus manos.',
+    icon: '🌐',
+    type: 'zone_count',
+    threshold: 30,
+    points: 800,
+  },
+  {
+    id: 'ach_senor_cumbres',
+    name: 'Señor de las Cumbres',
+    description: '¡Has escalado en las 37 zonas! No queda rincón clásico que no hayas pisado.',
+    icon: '👑',
+    type: 'zone_count',
+    threshold: 37,
+    points: 1200,
+  },
+]
+
 /**
- * Red de seguimientos:
  *
  * Mutuos:       Pedro ↔ Javier, Pedro ↔ María, Javier ↔ María
  * Unidirec.:    Laura → Pedro (sin retorno), Laura → María (sin retorno)
@@ -318,6 +469,8 @@ const RULES_HINT = `   ⚠️ Error de permisos detectado. Actualiza las Firesto
 export function SeedAdmin() {
   const [log, setLog] = useState<string[]>([])
   const [running, setRunning] = useState(false)
+  const [achLog, setAchLog] = useState<string[]>([])
+  const [achRunning, setAchRunning] = useState(false)
 
   function addLog(msg: string) {
     setLog((prev) => [...prev, msg])
@@ -568,6 +721,48 @@ export function SeedAdmin() {
   }
 
   // -------------------------------------------------------------------------
+  // Real achievements seed / clear
+  // -------------------------------------------------------------------------
+  async function handleSeedRealAchievements() {
+    if (achRunning) return
+    setAchRunning(true)
+    setAchLog(['📋 Añadiendo logros a la base de datos...'])
+    let ok = 0
+    for (const ach of REAL_ACHIEVEMENTS) {
+      try {
+        const { id, ...data } = ach
+        await setDoc(doc(db, 'achievements', id), data)
+        setAchLog((prev) => [...prev, `   ✓ ${ach.icon} ${ach.name}`])
+        ok++
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        setAchLog((prev) => [...prev, `   ✗ ${ach.name}: ${msg}`])
+      }
+    }
+    setAchLog((prev) => [...prev, '', `✅ ${ok}/${REAL_ACHIEVEMENTS.length} logros guardados en Firestore.`])
+    setAchRunning(false)
+  }
+
+  async function handleClearRealAchievements() {
+    if (achRunning) return
+    if (!confirm('¿Eliminar los logros reales de la aplicación? Los logros desbloqueados por los usuarios quedarán huérfanos.')) return
+    setAchRunning(true)
+    setAchLog(['🗑️  Eliminando logros...'])
+    let ok = 0
+    for (const ach of REAL_ACHIEVEMENTS) {
+      try {
+        await deleteDoc(doc(db, 'achievements', ach.id))
+        ok++
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        setAchLog((prev) => [...prev, `   ✗ ${ach.name}: ${msg}`])
+      }
+    }
+    setAchLog((prev) => [...prev, '', `✅ ${ok}/${REAL_ACHIEVEMENTS.length} logros eliminados.`])
+    setAchRunning(false)
+  }
+
+  // -------------------------------------------------------------------------
   // Render
   // -------------------------------------------------------------------------
   const ROUTE_COUNTS = [55, 25, 10, 9, '1 (+dup)', 0] as const
@@ -658,6 +853,80 @@ export function SeedAdmin() {
       {log.length > 0 && (
         <div className="bg-gray-900 rounded-xl p-4 font-mono text-xs text-gray-100 space-y-0.5 max-h-80 overflow-y-auto">
           {log.map((line, i) => (
+            <p
+              key={i}
+              className={
+                line.startsWith('✅') ? 'text-green-400' :
+                line.startsWith('❌') ? 'text-red-400' :
+                line.startsWith('⚠️') ? 'text-yellow-400' :
+                line === '' ? 'h-2' :
+                'text-gray-200'
+              }
+            >
+              {line || '\u00a0'}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Logros reales de la aplicación                                      */}
+      {/* ------------------------------------------------------------------ */}
+      <hr className="my-8 border-white/30" />
+
+      <h2 className="text-lg font-semibold mb-1">Logros de la aplicación</h2>
+      <p className="text-sm text-gray-500 mb-6">
+        Añade directamente los logros reales a Firestore. La operación es idempotente: si ya existen,
+        los sobreescribe con los valores actuales.
+      </p>
+
+      <div className="card mb-6">
+        <h3 className="text-sm font-semibold mb-3 text-gray-700">Logros disponibles</h3>
+        <div className="space-y-2">
+          {REAL_ACHIEVEMENTS.map((a) => (
+            <div key={a.id} className="flex items-center gap-3 text-sm">
+              <span className="text-xl w-7 text-center">{a.icon}</span>
+              <div className="flex-1">
+                <p className="font-medium text-sm">{a.name}</p>
+                <p className="text-xs text-gray-400">{a.description}</p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-xs font-semibold text-primary">{a.points} pts</p>
+                <p className="text-xs text-gray-400">
+                  {a.type === 'all_routes'
+                    ? 'todas las vías'
+                    : a.type === 'ascent_count'
+                    ? `${a.threshold} vía${(a.threshold ?? 0) > 1 ? 's' : ''}`
+                    : `${a.threshold} zona${(a.threshold ?? 0) > 1 ? 's' : ''}`}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-3 mb-6">
+        <button
+          onClick={handleSeedRealAchievements}
+          disabled={achRunning}
+          className="btn-primary flex items-center gap-2"
+        >
+          {achRunning ? <Spinner size="sm" /> : <Play className="h-4 w-4" />}
+          Añadir logros a Firestore
+        </button>
+        <button
+          onClick={handleClearRealAchievements}
+          disabled={achRunning}
+          className="btn-secondary flex items-center gap-2 text-danger border-danger hover:bg-danger/10"
+        >
+          <Trash2 className="h-4 w-4" />
+          Eliminar logros
+        </button>
+      </div>
+
+      {achLog.length > 0 && (
+        <div className="bg-gray-900 rounded-xl p-4 font-mono text-xs text-gray-100 space-y-0.5 max-h-60 overflow-y-auto">
+          {achLog.map((line, i) => (
             <p
               key={i}
               className={

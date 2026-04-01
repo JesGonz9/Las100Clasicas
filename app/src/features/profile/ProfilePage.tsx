@@ -158,7 +158,7 @@ export function ProfilePage() {
           <UserIcon className="h-10 w-10" />
         </div>
         <div className="flex-1">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <h1 className="text-xl font-bold">{profile.username}</h1>
             {isOwnProfile ? (
               <div className="flex gap-2">
@@ -178,7 +178,7 @@ export function ProfilePage() {
             )}
           </div>
           {profile.bio && <p className="text-sm text-gray-600 mt-1">{profile.bio}</p>}
-          <div className="flex gap-6 mt-3 text-sm">
+          <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-sm">
             <div>
               <span className="font-bold">{ascents.length}</span>{' '}
               <span className="text-gray-500">ascensiones</span>

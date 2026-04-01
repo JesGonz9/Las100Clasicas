@@ -105,7 +105,7 @@ export function SocialPage() {
       <div className="flex border-b border-gray-200 mb-4">
         <button
           onClick={() => setTab('feed')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`flex-1 text-center px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
             tab === 'feed' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
@@ -113,15 +113,15 @@ export function SocialPage() {
         </button>
         <button
           onClick={() => setTab('search')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`flex-1 text-center px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
             tab === 'search' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
-          Buscar usuarios
+          Buscar
         </button>
         <button
           onClick={() => setTab('ranking')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`flex-1 text-center px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
             tab === 'ranking' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >

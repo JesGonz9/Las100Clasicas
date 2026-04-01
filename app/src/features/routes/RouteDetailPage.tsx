@@ -105,18 +105,18 @@ export function RouteDetailPage() {
   return (
     <div className="p-4 max-w-4xl mx-auto space-y-4">
       {/* Header */}
-      <div className="bg-gradient-to-r from-slate-700/80 to-slate-500/60 backdrop-blur-sm rounded-xl p-6 flex items-center gap-4">
+      <div className="bg-gradient-to-r from-slate-700/80 to-slate-500/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 flex items-center gap-3 sm:gap-4">
         <Link
           to="/routes"
-          className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors"
+          className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors flex-shrink-0"
         >
           <ArrowLeft className="h-5 w-5 text-white" />
         </Link>
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-white">{route.name}</h1>
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-white break-words">{route.name}</h1>
             {myAscent && (
-              <span className="flex items-center gap-1 bg-green-500/80 text-white text-xs font-semibold px-2 py-1 rounded-full">
+              <span className="flex items-center gap-1 bg-green-500/80 text-white text-xs font-semibold px-2 py-1 rounded-full flex-shrink-0">
                 <CheckCircle className="h-3 w-3" />
                 Ascendida
               </span>
@@ -163,12 +163,12 @@ export function RouteDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200">
+        <div className="flex border-b border-gray-200 overflow-x-auto">
           {(['info', 'comments', 'ascents'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex-shrink-0 px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
                 tab === t ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >

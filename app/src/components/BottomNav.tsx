@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Mountain, User, Map, Bell, Users } from 'lucide-react'
+import { Mountain, User, Map, Bell, Users, Settings } from 'lucide-react'
 import { cn } from '@/utils'
+import { useAuth } from '@/hooks'
 
 const navItems = [
   { to: '/routes', icon: Mountain, label: 'Vías' },
@@ -12,6 +13,7 @@ const navItems = [
 
 export function BottomNav() {
   const { pathname } = useLocation()
+  const { user } = useAuth()
 
   return (
     <nav className="fixed bottom-0 inset-x-0 bg-white/50 backdrop-blur-md border-t border-white/40 z-50 md:hidden">
@@ -32,6 +34,18 @@ export function BottomNav() {
             </Link>
           )
         })}
+        {user?.role === 'admin' && (
+          <Link
+            to="/admin"
+            className={cn(
+              'flex flex-col items-center gap-1 text-xs transition-colors',
+              pathname.startsWith('/admin') ? 'text-primary' : 'text-gray-500 hover:text-gray-700',
+            )}
+          >
+            <Settings className="h-5 w-5" />
+            Admin
+          </Link>
+        )}
       </div>
     </nav>
   )
