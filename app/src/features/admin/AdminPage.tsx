@@ -47,7 +47,7 @@ export function AdminPage() {
           <button
             key={key}
             onClick={() => setTab(key)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            className={`flex flex-col sm:flex-row items-center gap-0.5 sm:gap-1.5 px-2 sm:px-3 py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
               tab === key ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
             }`}
           >
@@ -539,16 +539,16 @@ function WallsAdmin() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-semibold">Paredes ({walls.length})</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setMapEditId(mapEditId ? null : 'open')}
-            className="btn-secondary flex items-center gap-2"
+            className="btn-secondary flex items-center gap-2 text-sm"
           >
             {mapEditId ? 'Cerrar mapa' : 'Editar en mapa'}
           </button>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="btn-primary flex items-center gap-2"
+            className="btn-primary flex items-center gap-2 text-sm"
           >
             <Plus className="h-4 w-4" />
             Añadir pared

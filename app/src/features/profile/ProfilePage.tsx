@@ -204,32 +204,32 @@ export function ProfilePage() {
       <div className="flex border-b border-gray-200 mt-6 mb-4">
         <button
           onClick={() => setProfileTab('progress')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
             profileTab === 'progress' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
-          <BarChart3 className="h-4 w-4" />
+          <BarChart3 className="h-4 w-4 flex-shrink-0" />
           Progreso
         </button>
         <button
           onClick={() => setProfileTab('achievements')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
             profileTab === 'achievements' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
-          <Trophy className="h-4 w-4" />
-          Logros
-          <span className="text-xs text-gray-400">({unlockedAchievements.length}/{allAchievements.length})</span>
+          <Trophy className="h-4 w-4 flex-shrink-0" />
+          <span>Logros</span>
+          <span className="text-xs text-gray-400 tabular-nums">({unlockedAchievements.length}/{allAchievements.length})</span>
         </button>
         <button
           onClick={() => setProfileTab('ascents')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
             profileTab === 'ascents' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
-          <CheckCircle className="h-4 w-4" />
-          Vías
-          <span className="text-xs text-gray-400">({new Set(ascents.map(a => a.routeId)).size})</span>
+          <CheckCircle className="h-4 w-4 flex-shrink-0" />
+          <span>Vías</span>
+          <span className="text-xs text-gray-400 tabular-nums">({new Set(ascents.map(a => a.routeId)).size})</span>
         </button>
       </div>
 
