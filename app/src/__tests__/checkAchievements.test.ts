@@ -34,6 +34,7 @@ vi.mock('firebase/firestore', () => ({
 // ---- Import after mocks are set up ----------------------------------------
 import { getDocs, addDoc, deleteDoc } from 'firebase/firestore'
 import { checkAchievements, syncAllUsersAchievements } from '../services/firebase/firestore'
+import { cacheInvalidate, CACHE_KEYS } from '../services/firebase/staticCache'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -73,6 +74,10 @@ function setupGetDocs(
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // The static cache persists across tests in the same run because it is module-level state.
+  // getAchievements() and getRoutes() skip getDocs when the cache is warm, which would
+  // break the strictly-ordered getDocs mock responses. Clear both on every test.
+  cacheInvalidate(CACHE_KEYS.achievements, CACHE_KEYS.routes())
 })
 
 // ---------------------------------------------------------------------------
@@ -322,13 +327,15 @@ describe('syncAllUsersAchievements', () => {
       { id: 'u1', username: 'Alice', email: 'a@a.com', bio: '', photoURL: '' },
       { id: 'u2', username: 'Bob', email: 'b@b.com', bio: '', photoURL: '' },
     ]))
+    // Both checkAchievements start concurrently (Promise.all), so all getDocs calls fire
+    // before any mock resolves — both u1 and u2 see a cold cache.
     // checkAchievements for u1: 4 getDocs calls
     mockedGetDocs
       .mockResolvedValueOnce(makeDocs([]))  // achievements u1
       .mockResolvedValueOnce(makeDocs([]))  // userAchievements u1
       .mockResolvedValueOnce(makeDocs([]))  // ascents u1
       .mockResolvedValueOnce(makeDocs([]))  // routes u1
-    // checkAchievements for u2: 4 getDocs calls
+    // checkAchievements for u2: 4 getDocs calls (cache still cold when they fire)
     mockedGetDocs
       .mockResolvedValueOnce(makeDocs([]))  // achievements u2
       .mockResolvedValueOnce(makeDocs([]))  // userAchievements u2

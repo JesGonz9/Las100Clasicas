@@ -149,7 +149,7 @@ export function MapPage() {
               key={wall.id}
               position={[Number(wall.coordinates!.lat), Number(wall.coordinates!.lng)]}
               icon={makeColoredIcon(status)}
-              eventHandlers={{ click: () => setSelectedRoute(wallRoutes[0]) }}
+              eventHandlers={{ click: () => setSelectedRoute(wallRoutes[0] ?? null) }}
             >
               <Popup>
                 <div className="min-w-[180px]">

@@ -14,7 +14,6 @@ import {
   unfollowUser,
   getUserAchievements,
   getAchievements,
-  getRoute,
   getRoutes,
   getZones,
   signOut,

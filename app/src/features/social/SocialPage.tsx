@@ -16,7 +16,7 @@ import {
 } from '@/services/firebase'
 import { Spinner, EmptyState } from '@/components'
 import { calculateAscentPoints } from '@/utils'
-import type { User, Ascent, Route, Achievement } from '@/models'
+import type { User, Ascent, Route } from '@/models'
 
 interface FeedItem {
   ascent: Ascent
