@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Mountain, Search } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
@@ -20,17 +20,17 @@ const defaultIcon = L.icon({
 })
 L.Marker.prototype.options.icon = defaultIcon
 
-function FlyToRoute({ route, walls }: { route: Route | null; walls: Wall[] }) {
+function MapController({ focusWallId, walls }: { focusWallId: string | null; walls: Wall[] }) {
   const map = useMap()
   useEffect(() => {
-    if (!route) return
-    const wall = walls.find((w) => w.id === route.wallId)
+    if (!focusWallId) return
+    const wall = walls.find((w) => w.id === focusWallId)
     const lat = Number(wall?.coordinates?.lat)
     const lng = Number(wall?.coordinates?.lng)
     if (!isNaN(lat) && !isNaN(lng) && (lat !== 0 || lng !== 0)) {
-      map.flyTo([lat, lng], 14, { duration: 1 })
+      map.flyTo([lat, lng], 15, { duration: 1 })
     }
-  }, [route, walls, map])
+  }, [focusWallId, walls, map])
   return null
 }
 
@@ -42,7 +42,8 @@ export function MapPage() {
   const [loading, setLoading] = useState(true)
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null)
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
-  const mapRef = useRef<L.Map | null>(null)
+  const [focusWallId, setFocusWallId] = useState<string | null>(null)
+  const wallIdParam = searchParams.get('wall')
 
   useEffect(() => {
     async function load() {
@@ -54,6 +55,19 @@ export function MapPage() {
     }
     load()
   }, [])
+
+  // Al terminar de cargar, activar zoom sobre la pared indicada en ?wall=
+  useEffect(() => {
+    if (!loading && wallIdParam) {
+      setFocusWallId(wallIdParam)
+    }
+  }, [loading, wallIdParam])
+
+  // Al pinchar una vía del listado, centrar el mapa en su pared
+  const handleRouteClick = (route: Route) => {
+    setSelectedRoute(route)
+    setFocusWallId(route.wallId)
+  }
 
   if (loading) {
     return (
@@ -87,14 +101,13 @@ export function MapPage() {
         center={defaultCenter}
         zoom={6}
         className="absolute inset-0 z-0"
-        ref={mapRef}
         style={{ height: '100%', width: '100%' }}
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <FlyToRoute route={selectedRoute} walls={walls} />
+        <MapController focusWallId={focusWallId} walls={walls} />
 
         {wallsWithCoords.map((wall) => {
           const wallRoutes = filteredRoutes.filter((r) => r.wallId === wall.id)
@@ -156,7 +169,7 @@ export function MapPage() {
             return (
               <button
                 key={route.id}
-                onClick={() => setSelectedRoute(route)}
+                onClick={() => handleRouteClick(route)}
                 className="w-full text-left p-2 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 <p className="text-sm font-medium truncate">{route.name}</p>

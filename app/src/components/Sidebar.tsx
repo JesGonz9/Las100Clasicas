@@ -11,7 +11,7 @@ const navItems = [
   { to: '/social', icon: Users, label: 'Social' },
   { to: '/notifications', icon: Bell, label: 'Notificaciones' },
   { to: '/profile', icon: User, label: 'Perfil' },
-  { to: '/admin', icon: Settings, label: 'Admin' },
+  // Admin solo para admin
 ]
 
 export function Sidebar() {
@@ -44,6 +44,19 @@ export function Sidebar() {
             </Link>
           )
         })}
+        {/* Solo admin puede ver el panel de admin */}
+        {user?.role === 'admin' && (
+          <Link
+            to="/admin"
+            className={cn(
+              'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+              pathname.startsWith('/admin') ? 'bg-primary/10 text-primary' : 'text-gray-700 hover:bg-white/50',
+            )}
+          >
+            <Settings className="h-5 w-5" />
+            Admin
+          </Link>
+        )}
       </nav>
 
       {user && (
@@ -63,10 +76,10 @@ export function Sidebar() {
             className="flex items-center gap-2 text-sm text-gray-500 hover:text-danger transition-colors w-full"
           >
             <LogOut className="h-4 w-4" />
-            Cerrar sesión
-          </button>
-        </div>
-      )}
-    </aside>
-  )
-}
+              Cerrar sesión
+            </button>
+          </div>
+        )}
+      </aside>
+    )
+  }

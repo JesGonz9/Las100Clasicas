@@ -7,6 +7,7 @@ export interface User {
   photoURL: string
   bio: string
   createdAt: Timestamp
+  role?: 'admin' | 'user'
 }
 
 export interface Route {
