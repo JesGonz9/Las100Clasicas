@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 
-const IMAGES = ['/riglos.webp', '/torresanta.webp', '/urriello.webp']
+const BASE = import.meta.env.BASE_URL
+const IMAGES = [`${BASE}riglos.webp`, `${BASE}torresanta.webp`, `${BASE}urriello.webp`]
 const INTERVAL = 10000 // 10 seconds
 
 interface Props {
