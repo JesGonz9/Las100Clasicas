@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Settings, UserPlus, UserMinus, Mountain, Trophy, CheckCircle, Trash2, BarChart3, User as UserIcon } from 'lucide-react'
 import { useAuth } from '@/hooks'
+import { cn } from '@/utils'
 import {
   getUserProfile,
   getAscents,
@@ -171,7 +172,7 @@ export function ProfilePage() {
                 </button>
               </div>
             ) : (
-              <button onClick={toggleFollow} className={following ? 'btn-secondary flex items-center gap-1' : 'btn-primary flex items-center gap-1'}>
+              <button onClick={toggleFollow} className={cn(following ? 'btn-secondary' : 'btn-primary', 'flex items-center gap-1 w-fit')}>
                 {following ? <UserMinus className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
                 {following ? 'Dejar de seguir' : 'Seguir'}
               </button>

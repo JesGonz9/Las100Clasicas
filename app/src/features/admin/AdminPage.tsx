@@ -207,7 +207,7 @@ function RoutesAdmin() {
             ))}
           </select>
           <textarea className="input" placeholder="Ej: Ruta clásica por la cara oeste..." value={description} onChange={(e) => setDescription(e.target.value)} />
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <div>
               <label className="block text-xs font-medium text-gray-500 mb-1">Grado libre</label>
               <select className="input" value={freeGrade} onChange={(e) => setFreeGrade(e.target.value)}>
@@ -257,26 +257,26 @@ function RoutesAdmin() {
           const isEditing = editingRoute?.id === r.id
           return (
             <div key={r.id} className="card overflow-hidden cursor-pointer" onClick={() => isEditing ? resetForm() : startEdit(r)}>
-              <div className="flex items-center gap-3 min-w-0">
+              <div className="flex items-start gap-2 min-w-0">
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold truncate">{r.name}</h3>
-                  {(zone || wall) && (
-                    <p className="text-xs text-gray-500 truncate">
-                      {wall?.name}{zone ? ` · ${zone.name}` : ''}
-                    </p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {r.difficulty.free && (
-                    <span className="badge bg-blue-100 text-blue-800">{r.difficulty.free}</span>
-                  )}
-                  {r.difficulty.mandatory && (
-                    <span className="badge bg-orange-100 text-orange-800">{r.difficulty.mandatory}</span>
-                  )}
-                  {r.difficulty.aid && (
-                    <span className="badge bg-purple-100 text-purple-800">{r.difficulty.aid}</span>
-                  )}
-                  <span className="text-xs text-gray-400 ml-1">{r.length}m</span>
+                  <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-0.5">
+                    {(zone || wall) && (
+                      <span className="text-xs text-gray-500">
+                        {wall?.name}{zone ? ` · ${zone.name}` : ''}
+                      </span>
+                    )}
+                    {r.difficulty.free && (
+                      <span className="badge bg-blue-100 text-blue-800">{r.difficulty.free}</span>
+                    )}
+                    {r.difficulty.mandatory && (
+                      <span className="badge bg-orange-100 text-orange-800">{r.difficulty.mandatory}</span>
+                    )}
+                    {r.difficulty.aid && (
+                      <span className="badge bg-purple-100 text-purple-800">{r.difficulty.aid}</span>
+                    )}
+                    {r.length > 0 && <span className="text-xs text-gray-400">{r.length}m</span>}
+                  </div>
                 </div>
                 <div className="flex-shrink-0">
                   <button onClick={(e) => { e.stopPropagation(); handleDelete(r.id) }} className="text-gray-400 hover:text-danger transition-colors">
@@ -300,7 +300,7 @@ function RoutesAdmin() {
                     ))}
                   </select>
                   <textarea className="input" placeholder="Ej: Ruta clásica por la cara oeste..." value={description} onChange={(e) => setDescription(e.target.value)} />
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Grado libre</label>
                       <select className="input" value={freeGrade} onChange={(e) => setFreeGrade(e.target.value)}>

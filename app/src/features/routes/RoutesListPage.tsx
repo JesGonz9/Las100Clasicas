@@ -390,34 +390,34 @@ function RouteCard({ route, zones, walls, compact, index, ascended }: { route: R
 
   return (
     <Link to={`/routes/${route.id}`} className={cn('block transition-colors', !compact && 'card hover:shadow-md', ascended ? 'bg-green-50 border-green-200 hover:bg-green-100' : 'hover:bg-gray-50')}>
-      <div className="flex items-center gap-3 min-w-0">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold truncate">
-                {index != null && <span className="text-gray-400 mr-1">{index}.</span>}
-                {route.name}
-              </h3>
-              {ascended && <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />}
-            </div>
-            {(zone || wall) && (
-              <p className="text-xs text-gray-500 truncate">
-                {wall?.name}{zone ? ` · ${zone.name}` : ''}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            {route.difficulty.free && (
-              <span className="badge bg-blue-100 text-blue-800">{route.difficulty.free}</span>
-            )}
-            {route.difficulty.mandatory && (
-              <span className="badge bg-orange-100 text-orange-800">{route.difficulty.mandatory}</span>
-            )}
-            {route.difficulty.aid && (
-              <span className="badge bg-purple-100 text-purple-800">{route.difficulty.aid}</span>
-            )}
-            <span className="text-xs text-gray-400 ml-1">{route.length}m</span>
-          </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <h3 className="font-semibold truncate">
+            {index != null && <span className="text-gray-400 mr-1">{index}.</span>}
+            {route.name}
+          </h3>
+          {ascended && <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />}
         </div>
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 mt-0.5">
+          {(zone || wall) && (
+            <span className="text-xs text-gray-500">
+              {wall?.name}{zone ? ` · ${zone.name}` : ''}
+            </span>
+          )}
+          {route.difficulty.free && (
+            <span className="badge bg-blue-100 text-blue-800">{route.difficulty.free}</span>
+          )}
+          {route.difficulty.mandatory && (
+            <span className="badge bg-orange-100 text-orange-800">{route.difficulty.mandatory}</span>
+          )}
+          {route.difficulty.aid && (
+            <span className="badge bg-purple-100 text-purple-800">{route.difficulty.aid}</span>
+          )}
+          {route.length > 0 && (
+            <span className="text-xs text-gray-400">{route.length}m</span>
+          )}
+        </div>
+      </div>
     </Link>
   )
 }
