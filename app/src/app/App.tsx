@@ -7,7 +7,6 @@ import { NewAscentPage } from '@/features/ascents'
 import { ProfilePage, EditProfilePage } from '@/features/profile'
 import { NotificationsPage, SocialPage, FollowListPage } from '@/features/social'
 import { MapPage } from '@/features/map'
-import { DashboardPage } from '@/features/dashboard'
 import { AdminPage } from '@/features/admin'
 
 export function App() {
@@ -33,7 +32,6 @@ export function App() {
         <Route path="/routes/:id" element={<RouteDetailPage />} />
         <Route path="/routes/:routeId/ascent/new" element={<NewAscentPage />} />
         <Route path="/map" element={<MapPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/social" element={<SocialPage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/profile" element={<ProfilePage />} />

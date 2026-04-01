@@ -200,7 +200,7 @@ export function MapPage() {
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-block w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
-            <span className="text-gray-600">Sin completar</span>
+            <span className="text-gray-600">Ninguna completada</span>
           </div>
         </div>
       )}

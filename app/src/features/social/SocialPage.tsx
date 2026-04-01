@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, UserPlus, UserMinus, Users, Trophy } from 'lucide-react'
+import { Search, UserPlus, UserMinus, Users, Trophy, User as UserIcon } from 'lucide-react'
 import { useAuth } from '@/hooks'
 import {
   searchUsers,
@@ -156,8 +156,8 @@ export function SocialPage() {
             <div className="space-y-2">
               {results.map((u) => (
                 <div key={u.id} className="card flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0">
-                    {u.username[0]?.toUpperCase()}
+                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                    <UserIcon className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <Link to={`/profile/${u.id}`} className="text-sm font-medium hover:text-primary truncate block">
@@ -199,8 +199,8 @@ export function SocialPage() {
               {feed.map((item) => (
                 <div key={item.ascent.id} className="card">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary text-sm font-bold flex-shrink-0">
-                      {item.user.username[0]?.toUpperCase()}
+                    <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                      <UserIcon className="h-4 w-4" />
                     </div>
                     <Link to={`/profile/${item.user.id}`} className="text-sm font-medium hover:text-primary">
                       {item.user.username}
@@ -223,7 +223,7 @@ export function SocialPage() {
         </>
       )}
 
-      {tab === 'ranking' && <RankingTab />}
+      {tab === 'ranking' && <RankingTab followingIds={followingIds} currentUserId={currentUser?.id ?? ''} />}
     </div>
   )
 }
@@ -237,9 +237,10 @@ interface RankingEntry {
   achievementCount: number
 }
 
-function RankingTab() {
+function RankingTab({ followingIds, currentUserId }: { followingIds: Set<string>; currentUserId: string }) {
   const [ranking, setRanking] = useState<RankingEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [scope, setScope] = useState<'total' | 'friends'>('total')
 
   useEffect(() => {
     async function load() {
@@ -304,6 +305,9 @@ function RankingTab() {
 
   if (loading) return <div className="flex justify-center py-8"><Spinner /></div>
 
+  const friendIds = new Set([...followingIds, currentUserId])
+  const displayed = scope === 'friends' ? ranking.filter((e) => friendIds.has(e.user.id)) : ranking
+
   if (ranking.length === 0) return (
     <EmptyState icon={<Trophy className="h-12 w-12" />} title="Sin ranking" description="Aún no hay usuarios con puntuación" />
   )
@@ -311,38 +315,60 @@ function RankingTab() {
   const medals = ['🥇', '🥈', '🥉']
 
   return (
-    <div className="space-y-2">
-      {ranking.map((entry, i) => (
-        <Link key={entry.user.id} to={`/profile/${entry.user.id}`} className="card block hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3">
-            <div className="w-8 text-center flex-shrink-0">
-              {i < 3 ? (
-                <span className="text-2xl">{medals[i]}</span>
-              ) : (
-                <span className="text-sm font-bold text-gray-400">{i + 1}</span>
-              )}
-            </div>
-            {entry.user.photoURL ? (
-              <img src={entry.user.photoURL} alt="" className="h-10 w-10 rounded-full object-cover flex-shrink-0" />
-            ) : (
-              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0">
-                {entry.user.username?.[0]?.toUpperCase()}
+    <div>
+      {/* Sub-tabs Total / Amigos */}
+      <div className="flex bg-gray-100 rounded-lg p-1 mb-4">
+        <button
+          onClick={() => setScope('total')}
+          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+            scope === 'total' ? 'bg-white shadow-sm text-primary' : 'text-gray-500'
+          }`}
+        >
+          Total
+        </button>
+        <button
+          onClick={() => setScope('friends')}
+          className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-colors ${
+            scope === 'friends' ? 'bg-white shadow-sm text-primary' : 'text-gray-500'
+          }`}
+        >
+          Amigos
+        </button>
+      </div>
+
+      {displayed.length === 0 ? (
+        <EmptyState icon={<Trophy className="h-12 w-12" />} title="Sin amigos en el ranking" description="Sigue a otros escaladores para ver su posición aquí" />
+      ) : (
+        <div className="space-y-2">
+          {displayed.map((entry, i) => (
+            <Link key={entry.user.id} to={`/profile/${entry.user.id}`} className="card block hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3">
+                <div className="w-8 text-center flex-shrink-0">
+                  {i < 3 ? (
+                    <span className="text-2xl">{medals[i]}</span>
+                  ) : (
+                    <span className="text-sm font-bold text-gray-400">{i + 1}</span>
+                  )}
+                </div>
+                <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                  <UserIcon className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{entry.user.username}</p>
+                  <div className="flex gap-3 text-xs text-gray-500">
+                    <span>{entry.ascentCount} vías</span>
+                    <span>{entry.achievementCount} logros</span>
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="font-bold text-primary">{entry.totalPoints}</p>
+                  <p className="text-xs text-gray-400">puntos</p>
+                </div>
               </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{entry.user.username}</p>
-              <div className="flex gap-3 text-xs text-gray-500">
-                <span>{entry.ascentCount} vías</span>
-                <span>{entry.achievementCount} logros</span>
-              </div>
-            </div>
-            <div className="text-right flex-shrink-0">
-              <p className="font-bold text-primary">{entry.totalPoints}</p>
-              <p className="text-xs text-gray-400">puntos</p>
-            </div>
-          </div>
-        </Link>
-      ))}
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

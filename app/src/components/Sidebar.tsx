@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Mountain, User, Map, Bell, LayoutDashboard, Settings, LogOut, Users } from 'lucide-react'
+import { Mountain, User, Map, Bell, Settings, LogOut, Users } from 'lucide-react'
 import { cn } from '@/utils'
 import { useAuth } from '@/hooks'
 import { signOut } from '@/services/firebase'
@@ -7,10 +7,9 @@ import { signOut } from '@/services/firebase'
 const navItems = [
   { to: '/routes', icon: Mountain, label: 'Vías' },
   { to: '/map', icon: Map, label: 'Mapa' },
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/profile', icon: User, label: 'Perfil' },
   { to: '/social', icon: Users, label: 'Social' },
   { to: '/notifications', icon: Bell, label: 'Notificaciones' },
-  { to: '/profile', icon: User, label: 'Perfil' },
   // Admin solo para admin
 ]
 
@@ -19,7 +18,7 @@ export function Sidebar() {
   const { user } = useAuth()
 
   return (
-    <aside className="hidden md:flex flex-col w-64 bg-white/70 backdrop-blur-md border-r border-white/40 h-screen sticky top-0">
+    <aside className="hidden md:flex flex-col w-64 bg-white/50 backdrop-blur-md border-r border-white/40 h-screen sticky top-0">
       <div className="p-6 border-b border-white/40">
         <Link to="/" className="flex items-center gap-2 text-xl font-bold text-primary">
           <Mountain className="h-7 w-7" />
@@ -62,13 +61,9 @@ export function Sidebar() {
       {user && (
         <div className="p-4 border-t border-white/40">
           <div className="flex items-center gap-3 mb-3">
-            {user.photoURL ? (
-              <img src={user.photoURL} alt="" className="h-8 w-8 rounded-full object-cover" />
-            ) : (
-              <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-sm">
-                {user.username[0]?.toUpperCase()}
-              </div>
-            )}
+            <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+              <User className="h-4 w-4" />
+            </div>
             <span className="text-sm font-medium truncate">{user.username}</span>
           </div>
           <button

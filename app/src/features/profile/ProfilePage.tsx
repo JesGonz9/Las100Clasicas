@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { Settings, UserPlus, UserMinus, Mountain, Trophy, CheckCircle, Trash2 } from 'lucide-react'
+import { Settings, UserPlus, UserMinus, Mountain, Trophy, CheckCircle, Trash2, BarChart3, User as UserIcon } from 'lucide-react'
 import { useAuth } from '@/hooks'
 import {
   getUserProfile,
@@ -16,11 +16,12 @@ import {
   getAchievements,
   getRoute,
   getRoutes,
+  getZones,
   signOut,
 } from '@/services/firebase'
 import { Spinner } from '@/components'
 import { calculateAscentPoints } from '@/utils'
-import type { User, Ascent, Achievement, UserAchievement, Route } from '@/models'
+import type { User, Ascent, Achievement, UserAchievement, Route, Zone } from '@/models'
 
 export function ProfilePage() {
   const { userId } = useParams<{ userId: string }>()
@@ -35,15 +36,18 @@ export function ProfilePage() {
   const [unlockedAchievements, setUnlockedAchievements] = useState<Achievement[]>([])
   const [allAchievements, setAllAchievements] = useState<Achievement[]>([])
   const [routeMap, setRouteMap] = useState<Record<string, Route>>({})
+  const [allRoutes, setAllRoutes] = useState<Route[]>([])
+  const [zones, setZones] = useState<Zone[]>([])
   const [totalPoints, setTotalPoints] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [profileTab, setProfileTab] = useState<'progress' | 'achievements' | 'ascents'>('progress')
 
   const targetId = userId ?? currentUser?.id
 
   useEffect(() => {
     async function load() {
       if (!targetId) return
-      const [profileData, ascentsData, followers, followingData, allAch, userAch, routesData, isFollowingResult] =
+      const [profileData, ascentsData, followers, followingData, allAch, userAch, routesData, zonesData, isFollowingResult] =
         await Promise.all([
           getUserProfile(targetId),
           getAscents(undefined, targetId),
@@ -52,6 +56,7 @@ export function ProfilePage() {
           getAchievements(),
           getUserAchievements(targetId),
           getRoutes(),
+          getZones(),
           currentUser && !isOwnProfile ? checkFollowing(currentUser.id, targetId) : Promise.resolve(false),
         ])
       setProfile(profileData)
@@ -68,6 +73,8 @@ export function ProfilePage() {
       const rMap: Record<string, Route> = {}
       for (const r of routesData.routes) rMap[r.id] = r
       setRouteMap(rMap)
+      setAllRoutes(routesData.routes)
+      setZones(zonesData)
 
       const ascendedRouteIds = new Set<string>()
       let ascentPts = 0
@@ -148,13 +155,9 @@ export function ProfilePage() {
     <div className="max-w-2xl mx-auto p-4">
       {/* Header */}
       <div className="card flex items-start gap-4">
-        {profile.photoURL ? (
-          <img src={profile.photoURL} alt="" className="h-20 w-20 rounded-full object-cover" />
-        ) : (
-          <div className="h-20 w-20 rounded-full bg-primary/20 flex items-center justify-center text-primary text-2xl font-bold">
-            {profile.username[0]?.toUpperCase()}
-          </div>
-        )}
+        <div className="h-20 w-20 rounded-full bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+          <UserIcon className="h-10 w-10" />
+        </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold">{profile.username}</h1>
@@ -197,47 +200,158 @@ export function ProfilePage() {
         </div>
       </div>
 
-      {/* Achievements */}
-      <div className="mt-6">
-        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-          <Trophy className="h-5 w-5 text-secondary" />
-          Logros ({unlockedAchievements.length}/{allAchievements.length})
-        </h2>
-        {allAchievements.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">No hay logros configurados</p>
+      {/* Profile tabs */}
+      <div className="flex border-b border-gray-200 mt-6 mb-4">
+        <button
+          onClick={() => setProfileTab('progress')}
+          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            profileTab === 'progress' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <BarChart3 className="h-4 w-4" />
+          Progreso
+        </button>
+        <button
+          onClick={() => setProfileTab('achievements')}
+          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            profileTab === 'achievements' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Trophy className="h-4 w-4" />
+          Logros
+          <span className="text-xs text-gray-400">({unlockedAchievements.length}/{allAchievements.length})</span>
+        </button>
+        <button
+          onClick={() => setProfileTab('ascents')}
+          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            profileTab === 'ascents' ? 'border-primary text-primary' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <CheckCircle className="h-4 w-4" />
+          Vías
+          <span className="text-xs text-gray-400">({new Set(ascents.map(a => a.routeId)).size})</span>
+        </button>
+      </div>
+
+      {/* Tab: Progress */}
+      {profileTab === 'progress' && (() => {
+        const completedRouteIds = new Set(ascents.map((a) => a.routeId))
+        const completionPercent = allRoutes.length > 0 ? Math.round((completedRouteIds.size / allRoutes.length) * 100) : 0
+        const zoneStats = zones.map((zone) => {
+          const zoneRoutes = allRoutes.filter((r) => r.zoneId === zone.id)
+          const completed = zoneRoutes.filter((r) => completedRouteIds.has(r.id)).length
+          return { zone, total: zoneRoutes.length, completed }
+        }).filter((s) => s.total > 0)
+        return (
+          <div className="card">
+            <div className="mb-5">
+              <div className="flex justify-between text-sm mb-2">
+                <span className="text-gray-500">Total</span>
+                <span className="font-medium">{completedRouteIds.size}/{allRoutes.length} · {completionPercent}%</span>
+              </div>
+              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500"
+                  style={{ width: `${completionPercent}%` }}
+                />
+              </div>
+            </div>
+            <div className="space-y-3">
+              {zoneStats.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">Sin datos de zona</p>
+              ) : zoneStats.map(({ zone, total, completed }) => (
+                <div key={zone.id}>
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-gray-600">{zone.name}</span>
+                    <span className="font-medium text-gray-700">{completed}/{total}</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all duration-500"
+                      style={{ width: `${total > 0 ? (completed / total) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Tab: Achievements */}
+      {profileTab === 'achievements' && (() => {
+        const climbedRouteIds = new Set(ascents.map((a) => a.routeId))
+        const climbedZoneIds = new Set(
+          [...climbedRouteIds].map((rid) => routeMap[rid]?.zoneId).filter(Boolean) as string[],
+        )
+
+        function getProgress(a: Achievement): { current: number; max: number } {
+          if (a.type === 'ascent_count') {
+            return { current: climbedRouteIds.size, max: a.threshold ?? 1 }
+          }
+          if (a.type === 'zone_count') {
+            return { current: climbedZoneIds.size, max: a.threshold ?? 1 }
+          }
+          if (a.type === 'route_specific') {
+            const needed = a.routeIds ?? []
+            const done = needed.filter((id) => climbedRouteIds.has(id)).length
+            return { current: done, max: needed.length }
+          }
+          if (a.type === 'all_routes') {
+            return { current: climbedRouteIds.size, max: allRoutes.length }
+          }
+          return { current: 0, max: 1 }
+        }
+
+        return allAchievements.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">No hay logros configurados</p>
         ) : (
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-3">
             {allAchievements.map((a) => {
               const unlocked = unlockedAchievements.some((u) => u.id === a.id)
+              const { current, max } = getProgress(a)
+              const pct = max > 0 ? Math.min(100, Math.round((current / max) * 100)) : 0
               return (
-                <div key={a.id} className={`card ${unlocked ? 'bg-yellow-50 border-yellow-200' : 'opacity-50 grayscale'}`}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl">{a.icon || '🏔️'}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{a.name}</p>
+                <div
+                  key={a.id}
+                  className={`card text-center py-4 px-3 ${
+                    unlocked ? 'bg-yellow-50 border-yellow-200' : 'opacity-60 grayscale'
+                  }`}
+                >
+                  <span className="text-4xl block mb-2">{a.icon || '🏔️'}</span>
+                  <p className="font-semibold text-sm leading-tight">{a.name}</p>
+                  <p className="text-xs text-gray-500 mt-1 leading-snug">{a.description}</p>
+                  {unlocked ? (
+                    a.points > 0 && (
+                      <p className="text-xs font-bold text-yellow-700 mt-2">+{a.points} pts</p>
+                    )
+                  ) : (
+                    <div className="mt-3 px-1">
+                      <div className="flex justify-between text-xs text-gray-400 mb-1">
+                        <span>{current}</span>
+                        <span>{max}</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary/60 rounded-full transition-all"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  {unlocked && a.points > 0 && (
-                    <p className="text-xs font-medium text-yellow-700 mt-1">+{a.points} pts</p>
                   )}
                 </div>
               )
             })}
           </div>
-        )}
-      </div>
+        )
+      })()}
 
-      {/* Ascended routes */}
-      <div className="mt-6">
-        <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-          <CheckCircle className="h-5 w-5 text-green-600" />
-          Vías ascendidas ({ascents.length})
-        </h2>
-        {ascents.length === 0 ? (
+      {/* Tab: Ascents */}
+      {profileTab === 'ascents' && (
+        ascents.length === 0 ? (
           <p className="text-gray-500 text-center py-8">Sin ascensiones registradas</p>
         ) : (
           <div className="space-y-2">
-            {/* Deduplicate by routeId showing latest ascent per route */}
             {Object.values(
               ascents.reduce<Record<string, Ascent>>((acc, a) => {
                 if (!acc[a.routeId] || (a.date?.seconds ?? 0) > (acc[a.routeId]!.date?.seconds ?? 0)) {
@@ -283,8 +397,8 @@ export function ProfilePage() {
                 )
               })}
           </div>
-        )}
-      </div>
+        )
+      )}
     </div>
   )
 }

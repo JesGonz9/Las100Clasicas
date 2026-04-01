@@ -12,6 +12,7 @@ import {
   Timestamp,
 } from 'firebase/firestore'
 import { db } from './config'
+import { cacheGet, cacheSet, cacheInvalidate, CACHE_KEYS } from './staticCache'
 import type { Route, Zone, Wall, Ascent, Comment, Follow, Notification, Achievement, UserAchievement, User } from '@/models'
 
 // ---- Users ----
@@ -29,12 +30,18 @@ export async function updateUserProfile(id: string, data: Partial<User>) {
 
 // ---- Routes ----
 export async function getRoutes(filters?: { zoneId?: string; difficulty?: string }) {
+  const cacheKey = CACHE_KEYS.routes(filters?.zoneId)
+  const cached = cacheGet<{ routes: Route[] }>(cacheKey)
+  if (cached) return cached
+
   let q = query(collection(db, 'routes'), orderBy('name'))
   if (filters?.zoneId) q = query(q, where('zoneId', '==', filters.zoneId))
   const snap = await getDocs(q)
-  return {
+  const result = {
     routes: snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Route),
   }
+  cacheSet(cacheKey, result)
+  return result
 }
 
 export async function getRoute(id: string): Promise<Route | null> {
@@ -43,51 +50,80 @@ export async function getRoute(id: string): Promise<Route | null> {
 }
 
 export async function createRoute(data: Omit<Route, 'id' | 'createdAt'>) {
-  return addDoc(collection(db, 'routes'), { ...data, createdAt: Timestamp.now() })
+  const result = await addDoc(collection(db, 'routes'), { ...data, createdAt: Timestamp.now() })
+  cacheInvalidate(CACHE_KEYS.routes(), CACHE_KEYS.routes(data.zoneId))
+  return result
 }
 
 export async function updateRoute(id: string, data: Partial<Route>) {
-  return updateDoc(doc(db, 'routes', id), data)
+  const result = await updateDoc(doc(db, 'routes', id), data)
+  cacheInvalidate(CACHE_KEYS.routes(), ...(data.zoneId ? [CACHE_KEYS.routes(data.zoneId)] : []))
+  return result
 }
 
 export async function deleteRoute(id: string) {
-  return deleteDoc(doc(db, 'routes', id))
+  const result = await deleteDoc(doc(db, 'routes', id))
+  // Zone is unknown here — wipe all route cache entries
+  cacheInvalidate(CACHE_KEYS.routes())
+  return result
 }
 
 // ---- Zones ----
 export async function getZones(): Promise<Zone[]> {
+  const cached = cacheGet<Zone[]>(CACHE_KEYS.zones)
+  if (cached) return cached
+
   const snap = await getDocs(collection(db, 'zones'))
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Zone)
+  const result = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Zone)
+  cacheSet(CACHE_KEYS.zones, result)
+  return result
 }
 
 export async function createZone(name: string) {
-  return addDoc(collection(db, 'zones'), { name })
+  const result = await addDoc(collection(db, 'zones'), { name })
+  cacheInvalidate(CACHE_KEYS.zones)
+  return result
 }
 
 export async function deleteZone(id: string) {
-  return deleteDoc(doc(db, 'zones', id))
+  const result = await deleteDoc(doc(db, 'zones', id))
+  cacheInvalidate(CACHE_KEYS.zones)
+  return result
 }
 
 export async function updateZone(id: string, data: Partial<Zone>) {
-  return updateDoc(doc(db, 'zones', id), data)
+  const result = await updateDoc(doc(db, 'zones', id), data)
+  cacheInvalidate(CACHE_KEYS.zones)
+  return result
 }
 
 // ---- Walls ----
 export async function getWalls(): Promise<Wall[]> {
+  const cached = cacheGet<Wall[]>(CACHE_KEYS.walls)
+  if (cached) return cached
+
   const snap = await getDocs(collection(db, 'walls'))
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Wall)
+  const result = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Wall)
+  cacheSet(CACHE_KEYS.walls, result)
+  return result
 }
 
 export async function createWall(name: string, zoneId: string, coordinates?: { lat: number; lng: number }) {
-  return addDoc(collection(db, 'walls'), { name, zoneId, coordinates: coordinates ?? { lat: 0, lng: 0 } })
+  const result = await addDoc(collection(db, 'walls'), { name, zoneId, coordinates: coordinates ?? { lat: 0, lng: 0 } })
+  cacheInvalidate(CACHE_KEYS.walls)
+  return result
 }
 
 export async function deleteWall(id: string) {
-  return deleteDoc(doc(db, 'walls', id))
+  const result = await deleteDoc(doc(db, 'walls', id))
+  cacheInvalidate(CACHE_KEYS.walls)
+  return result
 }
 
 export async function updateWall(id: string, data: Partial<Wall>) {
-  return updateDoc(doc(db, 'walls', id), data)
+  const result = await updateDoc(doc(db, 'walls', id), data)
+  cacheInvalidate(CACHE_KEYS.walls)
+  return result
 }
 
 // ---- Ascents ----
@@ -193,20 +229,31 @@ export async function createNotification(data: Omit<Notification, 'id' | 'create
 
 // ---- Achievements ----
 export async function getAchievements(): Promise<Achievement[]> {
+  const cached = cacheGet<Achievement[]>(CACHE_KEYS.achievements)
+  if (cached) return cached
+
   const snap = await getDocs(collection(db, 'achievements'))
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Achievement)
+  const result = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Achievement)
+  cacheSet(CACHE_KEYS.achievements, result)
+  return result
 }
 
 export async function createAchievement(data: Omit<Achievement, 'id'>) {
-  return addDoc(collection(db, 'achievements'), data)
+  const result = await addDoc(collection(db, 'achievements'), data)
+  cacheInvalidate(CACHE_KEYS.achievements)
+  return result
 }
 
 export async function deleteAchievement(id: string) {
-  return deleteDoc(doc(db, 'achievements', id))
+  const result = await deleteDoc(doc(db, 'achievements', id))
+  cacheInvalidate(CACHE_KEYS.achievements)
+  return result
 }
 
 export async function updateAchievement(id: string, data: Partial<Achievement>) {
-  return updateDoc(doc(db, 'achievements', id), data)
+  const result = await updateDoc(doc(db, 'achievements', id), data)
+  cacheInvalidate(CACHE_KEYS.achievements)
+  return result
 }
 
 export async function getUserAchievements(userId: string): Promise<UserAchievement[]> {

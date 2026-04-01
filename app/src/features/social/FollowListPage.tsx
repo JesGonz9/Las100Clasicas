@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, UserPlus, UserMinus } from 'lucide-react'
+import { ArrowLeft, UserPlus, UserMinus, User as UserIcon } from 'lucide-react'
 import { useAuth } from '@/hooks'
 import {
   getFollowers,
@@ -83,8 +83,8 @@ export function FollowListPage() {
         <div className="space-y-2">
           {users.map((u) => (
             <div key={u.id} className="card flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold flex-shrink-0">
-                {u.username[0]?.toUpperCase()}
+              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                <UserIcon className="h-5 w-5" />
               </div>
               <div className="flex-1 min-w-0">
                 <Link to={`/profile/${u.id}`} className="text-sm font-medium hover:text-primary truncate block">

@@ -5,16 +5,16 @@ import { cn } from '@/utils'
 const navItems = [
   { to: '/routes', icon: Mountain, label: 'Vías' },
   { to: '/map', icon: Map, label: 'Mapa' },
+  { to: '/profile', icon: User, label: 'Perfil' },
   { to: '/social', icon: Users, label: 'Social' },
   { to: '/notifications', icon: Bell, label: 'Avisos' },
-  { to: '/profile', icon: User, label: 'Perfil' },
 ]
 
 export function BottomNav() {
   const { pathname } = useLocation()
 
   return (
-    <nav className="fixed bottom-0 inset-x-0 bg-white/70 backdrop-blur-md border-t border-white/40 z-50 md:hidden">
+    <nav className="fixed bottom-0 inset-x-0 bg-white/50 backdrop-blur-md border-t border-white/40 z-50 md:hidden">
       <div className="flex justify-around items-center h-16">
         {navItems.map(({ to, icon: Icon, label }) => {
           const active = pathname.startsWith(to)

@@ -8,7 +8,7 @@ interface Props {
   fixed?: boolean
 }
 
-export function BackgroundCarousel({ overlay = 'bg-white/80 backdrop-blur-[3px]', fixed = true }: Props) {
+export function BackgroundCarousel({ overlay = 'bg-white/60 backdrop-blur-[3px]', fixed = true }: Props) {
   const [current, setCurrent] = useState(0)
 
   useEffect(() => {

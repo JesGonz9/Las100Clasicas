@@ -1,5 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react'
-import { Plus, Trash2, Mountain, MapPinned, Trophy, Users, Upload, Layers, ChevronDown, Search } from 'lucide-react'
+import { Plus, Trash2, Mountain, MapPinned, Trophy, Users, Upload, Layers, ChevronDown, Search, FlaskConical } from 'lucide-react'
 import {
   getRoutes,
   getZones,
@@ -22,9 +22,10 @@ import {
 } from '@/services/firebase'
 import { Spinner } from '@/components'
 import { WallsMapAdmin } from './WallsMapAdmin'
+import { SeedAdmin } from './SeedAdmin'
 import type { Route, Zone, Wall, Achievement, AchievementType } from '@/models'
 
-type Tab = 'routes' | 'zones' | 'walls' | 'achievements' | 'users' | 'import'
+type Tab = 'routes' | 'zones' | 'walls' | 'achievements' | 'users' | 'import' | 'seed'
 
 export function AdminPage() {
   const [tab, setTab] = useState<Tab>('routes')
@@ -41,6 +42,7 @@ export function AdminPage() {
           { key: 'achievements' as const, label: 'Logros', icon: Trophy },
           { key: 'users' as const, label: 'Usuarios', icon: Users },
           { key: 'import' as const, label: 'Importar', icon: Upload },
+          { key: 'seed' as const, label: 'Seed', icon: FlaskConical },
         ]).map(({ key, label, icon: Icon }) => (
           <button
             key={key}
@@ -61,6 +63,7 @@ export function AdminPage() {
       {tab === 'achievements' && <AchievementsAdmin />}
       {tab === 'users' && <UsersAdmin />}
       {tab === 'import' && <ImportAdmin />}
+      {tab === 'seed' && <SeedAdmin />}
     </div>
   )
 }
@@ -470,7 +473,6 @@ function WallsAdmin() {
     })
     const updated = await getWalls()
     setWalls(updated)
-    setMapEditId(null)
   }
 
   useEffect(() => {
