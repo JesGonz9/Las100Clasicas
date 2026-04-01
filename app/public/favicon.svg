@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="16" fill="#1e3a5f"/>
+
+  <!-- Lucide Mountain icon (scaled to fit, centered, white) -->
+  <!-- Original lucide viewBox 0 0 24 24, scaled ~1.1x and centered in 32x32 -->
+  <g transform="translate(3.5, 3.5) scale(1.04)" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="m8 3 4 8 5-5 5 15H2L8 3z"/>
+    <path d="M4.14 15.08c2.62-1.57 5.24-1.43 7.86.42 2.74 1.94 5.49 2 8.23.19"/>
+  </g>
+</svg>
