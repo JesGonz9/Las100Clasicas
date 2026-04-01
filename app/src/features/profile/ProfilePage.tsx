@@ -6,6 +6,7 @@ import {
   getUserProfile,
   getAscents,
   deleteAscent,
+  checkAchievements,
   getFollowers,
   getFollowing,
   isFollowing as checkFollowing,
@@ -42,7 +43,7 @@ export function ProfilePage() {
   useEffect(() => {
     async function load() {
       if (!targetId) return
-      const [profileData, ascentsData, followers, followingData, allAch, userAch, routesData] =
+      const [profileData, ascentsData, followers, followingData, allAch, userAch, routesData, isFollowingResult] =
         await Promise.all([
           getUserProfile(targetId),
           getAscents(undefined, targetId),
@@ -51,11 +52,13 @@ export function ProfilePage() {
           getAchievements(),
           getUserAchievements(targetId),
           getRoutes(),
+          currentUser && !isOwnProfile ? checkFollowing(currentUser.id, targetId) : Promise.resolve(false),
         ])
       setProfile(profileData)
       setAscents(ascentsData.ascents)
       setFollowersCount(followers.length)
       setFollowingCount(followingData.length)
+      setFollowing(isFollowingResult)
 
       const unlockedIds = new Set(userAch.map((ua: UserAchievement) => ua.achievementId))
       setUnlockedAchievements(allAch.filter((a: Achievement) => unlockedIds.has(a.id)))
@@ -81,10 +84,6 @@ export function ProfilePage() {
       }
       setTotalPoints(ascentPts + achievementPts)
 
-      if (currentUser && !isOwnProfile) {
-        const isF = await checkFollowing(currentUser.id, targetId)
-        setFollowing(isF)
-      }
       setLoading(false)
     }
     load()
@@ -100,6 +99,37 @@ export function ProfilePage() {
       setFollowersCount((c) => c + 1)
     }
     setFollowing(!following)
+  }
+
+  async function handleDeleteAscent(ascentId: string) {
+    await deleteAscent(ascentId)
+    const newAscents = ascents.filter((x) => x.id !== ascentId)
+    setAscents(newAscents)
+
+    if (targetId) {
+      await checkAchievements(targetId)
+      const [allAch, userAch] = await Promise.all([
+        getAchievements(),
+        getUserAchievements(targetId),
+      ])
+      const unlockedIds = new Set(userAch.map((ua: UserAchievement) => ua.achievementId))
+      setUnlockedAchievements(allAch.filter((a: Achievement) => unlockedIds.has(a.id)))
+      setAllAchievements(allAch)
+
+      const ascendedRouteIds = new Set<string>()
+      let ascentPts = 0
+      for (const asc of newAscents) {
+        if (ascendedRouteIds.has(asc.routeId)) continue
+        ascendedRouteIds.add(asc.routeId)
+        const route = routeMap[asc.routeId]
+        if (route) ascentPts += calculateAscentPoints(route)
+      }
+      let achievementPts = 0
+      for (const ach of allAch) {
+        if (unlockedIds.has(ach.id)) achievementPts += ach.points ?? 0
+      }
+      setTotalPoints(ascentPts + achievementPts)
+    }
   }
 
   if (loading) {
@@ -185,7 +215,6 @@ export function ProfilePage() {
                     <span className="text-2xl">{a.icon || '🏔️'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{a.name}</p>
-                      <p className="text-xs text-gray-500 truncate">{a.description}</p>
                     </div>
                   </div>
                   {unlocked && a.points > 0 && (
@@ -243,10 +272,7 @@ export function ProfilePage() {
                       </div>
                       {isOwnProfile && (
                         <button
-                          onClick={async () => {
-                            await deleteAscent(a.id)
-                            setAscents((prev) => prev.filter((x) => x.id !== a.id))
-                          }}
+                          onClick={() => handleDeleteAscent(a.id)}
                           className="text-gray-400 hover:text-danger transition-colors flex-shrink-0"
                         >
                           <Trash2 className="h-4 w-4" />

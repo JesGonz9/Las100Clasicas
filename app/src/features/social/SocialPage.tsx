@@ -9,10 +9,9 @@ import {
   followUser,
   unfollowUser,
   getUserProfile,
-  getRoute,
   getRoutes,
   getAllUsers,
-  getUserAchievements,
+  getAllUserAchievements,
   getAchievements,
 } from '@/services/firebase'
 import { Spinner, EmptyState } from '@/components'
@@ -43,17 +42,28 @@ export function SocialPage() {
       const ids = new Set(following.map((f) => f.followingId))
       setFollowingIds(ids)
 
-      // Build feed from followed users' ascents
+      const followedIds = [...ids]
+      if (followedIds.length === 0) {
+        setLoadingFeed(false)
+        return
+      }
+
+      // Fetch profiles, all routes and all followed-users' ascents in parallel
+      const [profileResults, allRoutesData, ascentsResults] = await Promise.all([
+        Promise.all(followedIds.map((uid) => getUserProfile(uid))),
+        getRoutes(),
+        Promise.all(followedIds.map((uid) => getAscents(undefined, uid))),
+      ])
+
+      const routeMap = new Map(allRoutesData.routes.map((r) => [r.id, r]))
+
       const feedItems: FeedItem[] = []
-      for (const uid of ids) {
-        const [profile, ascentsData] = await Promise.all([
-          getUserProfile(uid),
-          getAscents(undefined, uid),
-        ])
-        if (profile) {
+      for (let i = 0; i < followedIds.length; i++) {
+        const profile = profileResults[i]
+        const ascentsData = ascentsResults[i]
+        if (profile && ascentsData) {
           for (const ascent of ascentsData.ascents) {
-            const route = await getRoute(ascent.routeId)
-            feedItems.push({ ascent, user: profile, route })
+            feedItems.push({ ascent, user: profile, route: routeMap.get(ascent.routeId) ?? null })
           }
         }
       }
@@ -89,7 +99,7 @@ export function SocialPage() {
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Social</h1>
+      <h1 className="text-2xl font-bold mb-6">Social</h1>
 
       {/* Tabs */}
       <div className="flex border-b border-gray-200 mb-4">
@@ -233,30 +243,39 @@ function RankingTab() {
 
   useEffect(() => {
     async function load() {
-      const [users, routesData, allAchievements] = await Promise.all([
+      // Fetch users, routes, achievements, all ascents and all userAchievements in parallel
+      const [users, routesData, allAchievements, allAscentsData, allUserAchievementsData] = await Promise.all([
         getAllUsers(),
         getRoutes(),
         getAchievements(),
+        getAscents(),
+        getAllUserAchievements(),
       ])
       const routeMap = new Map(routesData.routes.map((r) => [r.id, r]))
 
+      // Group ascents and userAchievements by userId in memory
+      const uniqueRoutesByUser = new Map<string, Set<string>>()
+      for (const ascent of allAscentsData.ascents) {
+        if (!uniqueRoutesByUser.has(ascent.userId)) uniqueRoutesByUser.set(ascent.userId, new Set())
+        uniqueRoutesByUser.get(ascent.userId)!.add(ascent.routeId)
+      }
+
+      const unlockedByUser = new Map<string, Set<string>>()
+      for (const ua of allUserAchievementsData) {
+        if (!unlockedByUser.has(ua.userId)) unlockedByUser.set(ua.userId, new Set())
+        unlockedByUser.get(ua.userId)!.add(ua.achievementId)
+      }
+
       const entries: RankingEntry[] = []
       for (const user of users) {
-        const [ascentsData, userAchievements] = await Promise.all([
-          getAscents(undefined, user.id),
-          getUserAchievements(user.id),
-        ])
-
-        const ascendedRouteIds = new Set<string>()
+        const ascendedRouteIds = uniqueRoutesByUser.get(user.id) ?? new Set<string>()
         let ascentPoints = 0
-        for (const ascent of ascentsData.ascents) {
-          if (ascendedRouteIds.has(ascent.routeId)) continue
-          ascendedRouteIds.add(ascent.routeId)
-          const route = routeMap.get(ascent.routeId)
+        for (const routeId of ascendedRouteIds) {
+          const route = routeMap.get(routeId)
           if (route) ascentPoints += calculateAscentPoints(route)
         }
 
-        const unlockedIds = new Set(userAchievements.map((ua) => ua.achievementId))
+        const unlockedIds = unlockedByUser.get(user.id) ?? new Set<string>()
         let achievementPoints = 0
         let achievementCount = 0
         for (const ach of allAchievements) {

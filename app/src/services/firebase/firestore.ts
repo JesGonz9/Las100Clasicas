@@ -215,6 +215,11 @@ export async function getUserAchievements(userId: string): Promise<UserAchieveme
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as UserAchievement)
 }
 
+export async function getAllUserAchievements(): Promise<UserAchievement[]> {
+  const snap = await getDocs(collection(db, 'userAchievements'))
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as UserAchievement)
+}
+
 export async function unlockAchievement(userId: string, achievementId: string) {
   return addDoc(collection(db, 'userAchievements'), {
     userId,
@@ -223,53 +228,57 @@ export async function unlockAchievement(userId: string, achievementId: string) {
   })
 }
 
+import { evaluateAchievement, buildAscendedSets } from '../../utils/achievements'
+
 export async function checkAchievements(userId: string): Promise<Achievement[]> {
-  const [allAchievements, userAchievements, ascentsData, routes, zones] = await Promise.all([
+  const [allAchievements, userAchievements, ascentsData, routes] = await Promise.all([
     getAchievements(),
     getUserAchievements(userId),
     getAscents(undefined, userId),
     getRoutes(),
-    getZones(),
   ])
 
-  const unlockedIds = new Set(userAchievements.map((ua) => ua.achievementId))
-  const userAscents = ascentsData.ascents
-  const ascendedRouteIds = new Set(userAscents.map((a) => a.routeId))
-  const ascendedZoneIds = new Set(
-    userAscents
-      .map((a) => routes.routes.find((r) => r.id === a.routeId)?.zoneId)
-      .filter(Boolean) as string[],
+  // Map achievementId -> userAchievement doc id for revocation
+  const unlockedMap = new Map(userAchievements.map((ua) => [ua.achievementId, ua.id]))
+  const { ascendedRouteIds, ascendedZoneIds } = buildAscendedSets(
+    ascentsData.ascents,
+    routes.routes,
   )
+  const allRouteIds = routes.routes.map((r) => r.id)
+  const allAchievementIds = new Set(allAchievements.map((a) => a.id))
 
-  const newlyUnlocked: Achievement[] = []
+  // Determine what to unlock and what to revoke synchronously
+  const toUnlock: Achievement[] = []
+  const toRevokeDocIds: string[] = []
 
   for (const achievement of allAchievements) {
-    if (unlockedIds.has(achievement.id)) continue
-
-    let completed = false
-
-    switch (achievement.type) {
-      case 'ascent_count':
-        completed = ascendedRouteIds.size >= (achievement.threshold ?? 0)
-        break
-      case 'zone_count':
-        completed = ascendedZoneIds.size >= (achievement.threshold ?? 0)
-        break
-      case 'route_specific':
-        completed = (achievement.routeIds ?? []).every((rid) => ascendedRouteIds.has(rid))
-        break
-      case 'all_routes':
-        completed = routes.routes.length > 0 && routes.routes.every((r) => ascendedRouteIds.has(r.id))
-        break
-    }
-
-    if (completed) {
-      await unlockAchievement(userId, achievement.id)
-      newlyUnlocked.push(achievement)
+    const completed = evaluateAchievement(achievement, ascendedRouteIds, ascendedZoneIds, allRouteIds)
+    if (completed && !unlockedMap.has(achievement.id)) {
+      toUnlock.push(achievement)
+    } else if (!completed && unlockedMap.has(achievement.id)) {
+      toRevokeDocIds.push(unlockedMap.get(achievement.id)!)
     }
   }
 
-  return newlyUnlocked
+  // Revoke userAchievements whose parent Achievement was deleted (orphans)
+  for (const [achievementId, docId] of unlockedMap) {
+    if (!allAchievementIds.has(achievementId)) {
+      toRevokeDocIds.push(docId)
+    }
+  }
+
+  // Apply all writes in parallel
+  await Promise.all([
+    ...toUnlock.map((a) => unlockAchievement(userId, a.id)),
+    ...toRevokeDocIds.map((docId) => deleteDoc(doc(db, 'userAchievements', docId))),
+  ])
+
+  return toUnlock
+}
+
+export async function syncAllUsersAchievements(): Promise<void> {
+  const users = await getAllUsers()
+  await Promise.all(users.map((u) => checkAchievements(u.id)))
 }
 
 export async function getAllUsers(): Promise<User[]> {

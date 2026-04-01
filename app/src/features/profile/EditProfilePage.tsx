@@ -40,7 +40,7 @@ export function EditProfilePage() {
 
       <h1 className="text-2xl font-bold mb-6">Editar Perfil</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="card space-y-4">
         {error && <div className="bg-red-50 text-danger text-sm p-3 rounded-lg">{error}</div>}
 
         <div className="flex justify-center">

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trophy } from 'lucide-react'
+import { ArrowLeft, Trophy, Star } from 'lucide-react'
 import { createAscent, checkAchievements } from '@/services/firebase/firestore'
 import { useAuth } from '@/hooks'
 import { Timestamp } from 'firebase/firestore'
@@ -61,24 +61,81 @@ export function NewAscentPage() {
     }
   }
 
+  const [achievementIndex, setAchievementIndex] = useState(0)
+
+  function handleContinue() {
+    if (achievementIndex < newAchievements.length - 1) {
+      setAchievementIndex((i) => i + 1)
+    } else {
+      navigate(`/routes/${routeId}`)
+    }
+  }
+
   if (newAchievements.length > 0) {
+    const a = newAchievements[achievementIndex]!
+    const isLast = achievementIndex === newAchievements.length - 1
     return (
-      <div className="p-4 max-w-lg mx-auto text-center">
-        <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-        <h1 className="text-2xl font-bold mb-2">¡Logro desbloqueado!</h1>
-        <div className="space-y-3 mb-6">
-          {newAchievements.map((a) => (
-            <div key={a.id} className="card bg-yellow-50 border-yellow-200">
-              <span className="text-3xl">{a.icon || '🏔️'}</span>
-              <p className="font-bold mt-1">{a.name}</p>
-              <p className="text-sm text-gray-600">{a.description}</p>
-              {a.points > 0 && <p className="text-sm font-medium text-yellow-700 mt-1">+{a.points} puntos</p>}
-            </div>
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center cursor-pointer"
+        onClick={handleContinue}
+        style={{ background: 'radial-gradient(ellipse at center, #1e3a8a 0%, #0f172a 70%)' }}
+      >
+        {/* Decorative stars */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none select-none">
+          {['top-8 left-12', 'top-16 right-20', 'top-32 left-1/3', 'bottom-24 left-16', 'bottom-16 right-12', 'bottom-40 right-1/3', 'top-1/2 left-8', 'top-1/2 right-6'].map((pos, i) => (
+            <Star key={i} className={`absolute ${pos} text-yellow-300/30`} style={{ width: `${16 + (i % 3) * 8}px`, height: `${16 + (i % 3) * 8}px` }} />
           ))}
         </div>
-        <button onClick={() => navigate(`/routes/${routeId}`)} className="btn-primary w-full">
-          Continuar
-        </button>
+
+        {/* Card */}
+        <div
+          className="relative mx-4 max-w-md w-full text-center space-y-5 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 shadow-2xl px-8 py-12"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Counter */}
+          {newAchievements.length > 1 && (
+            <p className="text-white/50 text-xs uppercase tracking-widest">
+              {achievementIndex + 1} / {newAchievements.length}
+            </p>
+          )}
+
+          {/* Emoji */}
+          <div className="relative inline-block">
+            <span className="text-8xl drop-shadow-lg">{a.icon || '🏔️'}</span>
+            <span className="absolute -top-2 -right-4 text-3xl animate-bounce">🎉</span>
+          </div>
+
+          {/* Label */}
+          <p className="text-yellow-400 text-xs font-bold uppercase tracking-widest">¡Logro desbloqueado!</p>
+
+          {/* Achievement name */}
+          <h2 className="text-3xl font-extrabold text-white leading-tight">{a.name}</h2>
+
+          {/* Message — same visual weight as title */}
+          {a.description && (
+            <p className="text-2xl font-bold text-yellow-300 leading-snug">
+              {a.description}
+            </p>
+          )}
+
+          {/* Points */}
+          {a.points > 0 && (
+            <div className="inline-flex items-center gap-2 bg-yellow-400/20 border border-yellow-400/40 text-yellow-300 font-bold px-5 py-2 rounded-full">
+              <Trophy className="h-4 w-4" />
+              +{a.points} puntos
+            </div>
+          )}
+
+          {/* Button */}
+          <button
+            onClick={handleContinue}
+            className="w-full mt-2 bg-white text-primary font-bold py-3 rounded-xl hover:bg-yellow-50 transition-colors shadow-lg"
+          >
+            {isLast ? 'Continuar' : 'Siguiente logro →'}
+          </button>
+
+          <p className="text-white/30 text-xs">Toca en cualquier sitio para continuar</p>
+        </div>
       </div>
     )
   }
@@ -92,7 +149,7 @@ export function NewAscentPage() {
 
       <h1 className="text-2xl font-bold mb-6">Nueva Ascensión</h1>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="card space-y-4">
         {error && <div className="bg-red-50 text-danger text-sm p-3 rounded-lg">{error}</div>}
 
         <div>

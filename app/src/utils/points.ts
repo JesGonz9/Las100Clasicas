@@ -1,4 +1,4 @@
-import type { Route } from '@/models'
+import type { Route, Ascent, Achievement } from '@/models'
 
 const GRADE_POINTS: Record<string, number> = {
   'III': 5,
@@ -34,4 +34,31 @@ export function calculateAscentPoints(route: Route): number {
   const gradePoints = getGradePoints(route.difficulty.free)
   const lengthBonus = Math.floor((route.length ?? 0) * 0.1)
   return gradePoints + lengthBonus
+}
+
+/**
+ * Calculates a user's total points from ascents and unlocked achievements.
+ * Each route is counted only once even if ascended multiple times.
+ */
+export function calculateUserTotalPoints(
+  ascents: Pick<Ascent, 'routeId'>[],
+  routeMap: Map<string, Route>,
+  achievements: Achievement[],
+  unlockedAchievementIds: Set<string>,
+): { ascentPoints: number; achievementPoints: number; total: number } {
+  const counted = new Set<string>()
+  let ascentPoints = 0
+  for (const ascent of ascents) {
+    if (counted.has(ascent.routeId)) continue
+    counted.add(ascent.routeId)
+    const route = routeMap.get(ascent.routeId)
+    if (route) ascentPoints += calculateAscentPoints(route)
+  }
+
+  let achievementPoints = 0
+  for (const ach of achievements) {
+    if (unlockedAchievementIds.has(ach.id)) achievementPoints += ach.points ?? 0
+  }
+
+  return { ascentPoints, achievementPoints, total: ascentPoints + achievementPoints }
 }

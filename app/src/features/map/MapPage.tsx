@@ -4,7 +4,8 @@ import { Mountain, Search } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { getRoutes, getZones, getWalls } from '@/services/firebase'
+import { getRoutes, getZones, getWalls, getAscents } from '@/services/firebase'
+import { useAuth } from '@/hooks'
 import { Spinner } from '@/components'
 import type { Route, Zone, Wall } from '@/models'
 
@@ -19,6 +20,25 @@ const defaultIcon = L.icon({
   shadowSize: [41, 41],
 })
 L.Marker.prototype.options.icon = defaultIcon
+
+type WallStatus = 'none' | 'partial' | 'complete'
+
+function makeColoredIcon(status: WallStatus) {
+  const color = status === 'complete' ? '#22c55e' : status === 'partial' ? '#f97316' : '#ef4444'
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="36">
+      <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24S24 21 24 12C24 5.373 18.627 0 12 0z"
+            fill="${color}" stroke="white" stroke-width="1.5"/>
+      <circle cx="12" cy="12" r="5" fill="white" opacity="0.9"/>
+    </svg>`
+  return L.divIcon({
+    html: svg,
+    className: '',
+    iconSize: [24, 36],
+    iconAnchor: [12, 36],
+    popupAnchor: [0, -36],
+  })
+}
 
 function MapController({ focusWallId, walls }: { focusWallId: string | null; walls: Wall[] }) {
   const map = useMap()
@@ -35,10 +55,12 @@ function MapController({ focusWallId, walls }: { focusWallId: string | null; wal
 }
 
 export function MapPage() {
+  const { user } = useAuth()
   const [searchParams] = useSearchParams()
   const [routes, setRoutes] = useState<Route[]>([])
   const [zones, setZones] = useState<Zone[]>([])
   const [walls, setWalls] = useState<Wall[]>([])
+  const [ascendedRouteIds, setAscendedRouteIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null)
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
@@ -47,14 +69,20 @@ export function MapPage() {
 
   useEffect(() => {
     async function load() {
-      const [routesData, zonesData, wallsData] = await Promise.all([getRoutes(), getZones(), getWalls()])
+      const [routesData, zonesData, wallsData, ascentsData] = await Promise.all([
+        getRoutes(),
+        getZones(),
+        getWalls(),
+        user ? getAscents(undefined, user.id) : Promise.resolve({ ascents: [] }),
+      ])
       setRoutes(routesData.routes)
       setZones(zonesData)
       setWalls(wallsData)
+      setAscendedRouteIds(new Set(ascentsData.ascents.map((a) => a.routeId)))
       setLoading(false)
     }
     load()
-  }, [])
+  }, [user])
 
   // Al terminar de cargar, activar zoom sobre la pared indicada en ?wall=
   useEffect(() => {
@@ -113,32 +141,43 @@ export function MapPage() {
           const wallRoutes = filteredRoutes.filter((r) => r.wallId === wall.id)
           if (wallRoutes.length === 0) return null
           const zone = zones.find((z) => z.id === wall.zoneId)
+          const ascendedCount = wallRoutes.filter((r) => ascendedRouteIds.has(r.id)).length
+          const status: WallStatus =
+            ascendedCount === 0 ? 'none' : ascendedCount === wallRoutes.length ? 'complete' : 'partial'
           return (
             <Marker
               key={wall.id}
               position={[Number(wall.coordinates!.lat), Number(wall.coordinates!.lng)]}
+              icon={makeColoredIcon(status)}
               eventHandlers={{ click: () => setSelectedRoute(wallRoutes[0]) }}
             >
               <Popup>
                 <div className="min-w-[180px]">
                   <h3 className="font-bold text-sm">{wall.name}</h3>
-                  {zone && <p className="text-xs text-gray-500">{zone.name}</p>}
-                  <div className="mt-1 space-y-1">
-                    {wallRoutes.map((route) => (
-                      <div key={route.id} className="flex items-center justify-between gap-2">
-                        <Link
-                          to={`/routes/${route.id}`}
-                          className="text-xs text-blue-600 hover:underline truncate"
-                        >
-                          {route.name}
-                        </Link>
-                        {route.difficulty.free && (
-                          <span className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded flex-shrink-0">
-                            {route.difficulty.free}
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                  {zone && <p className="text-xs text-gray-500 mb-1">{zone.name}</p>}
+                  <p className="text-xs text-gray-400 mb-2">
+                    {ascendedCount}/{wallRoutes.length} vías completadas
+                  </p>
+                  <div className="space-y-1">
+                    {wallRoutes.map((route) => {
+                      const done = ascendedRouteIds.has(route.id)
+                      return (
+                        <div key={route.id} className="flex items-center justify-between gap-2">
+                          <Link
+                            to={`/routes/${route.id}`}
+                            className="text-xs text-blue-600 hover:underline truncate flex items-center gap-1"
+                          >
+                            {done && <span className="text-green-500">✓</span>}
+                            {route.name}
+                          </Link>
+                          {route.difficulty.free && (
+                            <span className="text-xs bg-blue-100 text-blue-800 px-1 py-0.5 rounded flex-shrink-0">
+                              {route.difficulty.free}
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               </Popup>
@@ -146,6 +185,25 @@ export function MapPage() {
           )
         })}
       </MapContainer>
+
+      {/* Legend */}
+      {user && (
+        <div className="absolute bottom-24 right-4 md:bottom-8 bg-white/95 backdrop-blur-sm rounded-xl shadow-md z-[1000] p-3 text-xs space-y-1.5">
+          <p className="font-semibold text-gray-700 mb-1">Progreso</p>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
+            <span className="text-gray-600">Todas completadas</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full bg-orange-500 flex-shrink-0" />
+            <span className="text-gray-600">Algunas completadas</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-3 h-3 rounded-full bg-red-500 flex-shrink-0" />
+            <span className="text-gray-600">Sin completar</span>
+          </div>
+        </div>
+      )}
 
       {/* Routes sidebar */}
       <div className="absolute top-4 left-4 w-80 max-h-[80vh] overflow-y-auto bg-white rounded-xl shadow-lg z-[1000] hidden md:block">

@@ -26,29 +26,34 @@ export function DashboardPage() {
   useEffect(() => {
     async function load() {
       if (!user) return
-      const [ascentsData, routesData, zonesData, followersData, followingData, allUsers] = await Promise.all([
-        getAscents(undefined, user.id),
+      const [allAscentsData, routesData, zonesData, followersData, followingData, allUsers] = await Promise.all([
+        getAscents(),           // fetch all ascents once — used for own stats AND ranking
         getRoutes(),
         getZones(),
         getFollowers(user.id),
         getFollowing(user.id),
         getAllUsers(),
       ])
-      setAscents(ascentsData.ascents)
+
+      const allAscents = allAscentsData.ascents
+      const ownAscents = allAscents.filter((a) => a.userId === user.id)
+
+      setAscents(ownAscents)
       setRoutes(routesData.routes)
       setZones(zonesData)
       setFollowers(followersData.length)
       setFollowing(followingData.length)
 
-      // Build global ranking: get ascent counts for all users
-      const userAscents = await Promise.all(
-        allUsers.map(async (u) => {
-          const data = await getAscents(undefined, u.id)
-          const uniqueRoutes = new Set(data.ascents.map((a) => a.routeId))
-          return { user: u, count: uniqueRoutes.size }
-        }),
-      )
-      const sorted = userAscents.filter((r) => r.count > 0).sort((a, b) => b.count - a.count)
+      // Build global ranking: group all ascents by userId in memory (0 extra queries)
+      const uniqueRoutesByUser = new Map<string, Set<string>>()
+      for (const ascent of allAscents) {
+        if (!uniqueRoutesByUser.has(ascent.userId)) uniqueRoutesByUser.set(ascent.userId, new Set())
+        uniqueRoutesByUser.get(ascent.userId)!.add(ascent.routeId)
+      }
+      const sorted = allUsers
+        .map((u) => ({ user: u, count: uniqueRoutesByUser.get(u.id)?.size ?? 0 }))
+        .filter((r) => r.count > 0)
+        .sort((a, b) => b.count - a.count)
       setGlobalRanking(sorted)
 
       // Social ranking: only users I follow + myself

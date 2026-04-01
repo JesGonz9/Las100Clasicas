@@ -4,7 +4,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Wall } from '@/models'
 
-// Icono personalizado para los marcadores
+// Icono estándar para los marcadores
 const wallIcon = new L.Icon({
   iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   iconSize: [25, 41],
@@ -12,6 +12,19 @@ const wallIcon = new L.Icon({
   popupAnchor: [1, -34],
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
   shadowSize: [41, 41],
+})
+
+// Icono rojo para marcadores en modo edición
+const editingIcon = L.divIcon({
+  html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36" width="24" height="36">
+    <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 24 12 24S24 21 24 12C24 5.373 18.627 0 12 0z"
+          fill="#ef4444" stroke="white" stroke-width="1.5"/>
+    <circle cx="12" cy="12" r="5" fill="white" opacity="0.9"/>
+  </svg>`,
+  className: '',
+  iconSize: [24, 36],
+  iconAnchor: [12, 36],
+  popupAnchor: [0, -36],
 })
 
 
@@ -73,7 +86,7 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
             <Marker
               key={w.id}
               position={[w.coordinates.lat, w.coordinates.lng]}
-              icon={wallIcon}
+              icon={selected === w.id ? editingIcon : wallIcon}
               eventHandlers={{
                 click: () => {
                   if (selected === w.id) return;
@@ -126,7 +139,7 @@ export function WallsMapAdmin({ walls, onSetCoords }: WallsMapAdminProps) {
         />
         {addCoords && (
           <>
-            <Marker position={[addCoords.lat, addCoords.lng]} icon={wallIcon} />
+            <Marker position={[addCoords.lat, addCoords.lng]} icon={editingIcon} />
             <Popup position={[addCoords.lat, addCoords.lng]} autoPan closeOnClick={false} eventHandlers={{ remove: () => { setAddCoords(null); setAddWallId(''); setSelected(null); } }}>
               <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                 <div className="text-xs text-gray-500">Asignar a pared:</div>

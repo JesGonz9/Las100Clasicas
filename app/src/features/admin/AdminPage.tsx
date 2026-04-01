@@ -18,6 +18,7 @@ import {
   updateAchievement,
   deleteAchievement,
   getAllUsers,
+  syncAllUsersAchievements,
 } from '@/services/firebase'
 import { Spinner } from '@/components'
 import { WallsMapAdmin } from './WallsMapAdmin'
@@ -151,11 +152,13 @@ function RoutesAdmin() {
     const updated = await getRoutes()
     setRoutes(updated.routes)
     resetForm()
+    syncAllUsersAchievements()
   }
 
   async function handleDelete(id: string) {
     await deleteRoute(id)
     setRoutes(routes.filter((r) => r.id !== id))
+    syncAllUsersAchievements()
   }
 
   if (loading) return <div className="flex items-center justify-center min-h-[50vh]"><Spinner /></div>
@@ -532,23 +535,31 @@ function WallsAdmin() {
 
   return (
     <div>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Paredes ({walls.length})</h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setMapEditId(mapEditId ? null : 'open')}
+            className="btn-secondary flex items-center gap-2"
+          >
+            {mapEditId ? 'Cerrar mapa' : 'Editar en mapa'}
+          </button>
+          <button
+            onClick={() => setShowForm(!showForm)}
+            className="btn-primary flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Añadir pared
+            <ChevronDown className={`h-4 w-4 transition-transform ${showForm ? 'rotate-180' : ''}`} />
+          </button>
+        </div>
+      </div>
       {mapEditId && (
         <WallsMapAdmin
           walls={walls}
           onSetCoords={handleSetCoords}
         />
       )}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Paredes ({walls.length})</h2>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Añadir pared
-          <ChevronDown className={`h-4 w-4 transition-transform ${showForm ? 'rotate-180' : ''}`} />
-        </button>
-      </div>
       {showForm && (
           <form onSubmit={handleCreate} className="card mt-3 space-y-3">
             <select className="input" value={zoneId} onChange={(e) => setZoneId(e.target.value)} required>
@@ -622,9 +633,6 @@ function WallsAdmin() {
                   <div className="flex gap-2">
                     <button onClick={() => handleSave(w.id)} className="btn-primary">Guardar cambios</button>
                     <button onClick={() => setEditingId(null)} className="btn-secondary">Cancelar</button>
-                    <button type="button" className="btn-secondary" onClick={() => setMapEditId(w.id)}>
-                      Editar en mapa
-                    </button>
                   </div>
                 </div>
               )}
@@ -698,6 +706,7 @@ function AchievementsAdmin() {
     setAchievements(updated)
     resetForm()
     setShowForm(false)
+    syncAllUsersAchievements()
   }
 
   function startEdit(a: Achievement) {
@@ -720,11 +729,13 @@ function AchievementsAdmin() {
     const updated = await getAchievements()
     setAchievements(updated)
     setEditingId(null)
+    syncAllUsersAchievements()
   }
 
   async function handleDelete(id: string) {
     await deleteAchievement(id)
     setAchievements(achievements.filter((a) => a.id !== id))
+    syncAllUsersAchievements()
   }
 
   function toggleRouteId(routeId: string, isEdit: boolean) {
@@ -762,8 +773,8 @@ function AchievementsAdmin() {
     )
   }
 
-  function TypeFields({ type, threshold, onThresholdChange, isEdit, selected, search, onSearchChange, onToggle }: {
-    type: AchievementType; threshold: string; onThresholdChange: (v: string) => void; isEdit: boolean
+  function TypeFields({ type, threshold, onThresholdChange, selected, search, onSearchChange, onToggle }: {
+    type: AchievementType; threshold: string; onThresholdChange: (v: string) => void
     selected: string[]; search: string; onSearchChange: (v: string) => void; onToggle: (id: string) => void
   }) {
     if (type === 'ascent_count') return (
@@ -812,7 +823,10 @@ function AchievementsAdmin() {
             </div>
           </div>
           <input className="input" placeholder="Ej: Explorador" value={name} onChange={(e) => setName(e.target.value)} required />
-          <input className="input" placeholder="Ej: Escala vías en 5 zonas distintas" value={description} onChange={(e) => setDescription(e.target.value)} required />
+          <div>
+            <label className="block text-xs font-medium text-gray-500 mb-1">Mensaje al conseguir el logro</label>
+            <input className="input" placeholder="Ej: Has escalado en 5 zonas distintas" value={description} onChange={(e) => setDescription(e.target.value)} required />
+          </div>
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
@@ -827,7 +841,7 @@ function AchievementsAdmin() {
               <input className="input" type="number" min="0" placeholder="Ej: 50" value={points} onChange={(e) => setPoints(e.target.value)} required />
             </div>
           </div>
-          <TypeFields type={type} threshold={threshold} onThresholdChange={setThreshold} isEdit={false}
+          <TypeFields type={type} threshold={threshold} onThresholdChange={setThreshold}
             selected={selectedRouteIds} search={routeSearch} onSearchChange={setRouteSearch} onToggle={(id) => toggleRouteId(id, false)} />
           <div className="flex gap-2">
             <button type="submit" className="btn-primary">Crear</button>
@@ -844,7 +858,6 @@ function AchievementsAdmin() {
                 <span className="text-2xl">{a.icon || '🏔️'}</span>
                 <div>
                   <p className="font-medium">{a.name}</p>
-                  <p className="text-sm text-gray-500">{a.description}</p>
                   <div className="flex gap-2 mt-1 flex-wrap">
                     <span className="text-xs badge bg-blue-100 text-blue-800">{ACHIEVEMENT_TYPE_LABELS[a.type] ?? a.type}</span>
                     {a.points > 0 && <span className="text-xs badge bg-yellow-100 text-yellow-800">+{a.points} pts</span>}
@@ -871,7 +884,10 @@ function AchievementsAdmin() {
                   ))}
                 </div>
                 <input className="input" value={editName} onChange={(e) => setEditName(e.target.value)} required />
-                <input className="input" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} required />
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Mensaje al conseguir el logro</label>
+                  <input className="input" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} required />
+                </div>
                 <div className="flex gap-3">
                   <div className="flex-1">
                     <label className="block text-xs font-medium text-gray-500 mb-1">Tipo</label>
@@ -886,7 +902,7 @@ function AchievementsAdmin() {
                     <input className="input" type="number" min="0" value={editPoints} onChange={(e) => setEditPoints(e.target.value)} />
                   </div>
                 </div>
-                <TypeFields type={editType} threshold={editThreshold} onThresholdChange={setEditThreshold} isEdit={true}
+                <TypeFields type={editType} threshold={editThreshold} onThresholdChange={setEditThreshold}
                   selected={editSelectedRouteIds} search={editRouteSearch} onSearchChange={setEditRouteSearch} onToggle={(id) => toggleRouteId(id, true)} />
                 <div className="flex gap-2">
                   <button onClick={() => handleSave(a.id)} className="btn-primary">Guardar cambios</button>

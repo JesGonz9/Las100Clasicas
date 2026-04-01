@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { ExternalLink, MapPin, ArrowLeft, Plus, Star, CheckCircle, Trash2 } from 'lucide-react'
-import { getRoute, getComments, addComment, getAscents, getZones, getWalls, getUserProfile, deleteAscent } from '@/services/firebase'
+import { getRoute, getComments, addComment, getAscents, getZones, getWalls, getUserProfile, deleteAscent, checkAchievements } from '@/services/firebase'
 import { useAuth } from '@/hooks'
 import { Spinner } from '@/components'
 import type { Route, Comment as CommentType, Ascent, Zone, Wall, User as UserType } from '@/models'
@@ -60,10 +60,11 @@ export function RouteDetailPage() {
   const myAscent = user ? ascents.find((a) => a.userId === user.id) : null
 
   async function handleDeleteAscent() {
-    if (!myAscent) return
+    if (!myAscent || !user) return
     setDeletingAscent(true)
     await deleteAscent(myAscent.id)
     setAscents((prev) => prev.filter((a) => a.id !== myAscent.id))
+    await checkAchievements(user.id)
     setDeletingAscent(false)
   }
 
@@ -102,9 +103,9 @@ export function RouteDetailPage() {
   const wall = walls.find((w) => w.id === route.wallId)
 
   return (
-    <div className="max-w-4xl mx-auto bg-white/60 backdrop-blur-sm min-h-screen">
+    <div className="p-4 max-w-4xl mx-auto space-y-4">
       {/* Header */}
-      <div className="relative bg-gradient-to-r from-slate-600/60 to-slate-400/40 backdrop-blur-sm p-6 flex items-center gap-4">
+      <div className="bg-gradient-to-r from-slate-700/80 to-slate-500/60 backdrop-blur-sm rounded-xl p-6 flex items-center gap-4">
         <Link
           to="/routes"
           className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors"
@@ -133,8 +134,8 @@ export function RouteDetailPage() {
         </div>
       </div>
 
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-4">
+      <div className="card space-y-4">
+        <div className="flex items-start justify-between">
           <div />
           {myAscent ? (
             <button
@@ -154,7 +155,7 @@ export function RouteDetailPage() {
         </div>
 
         {/* Difficulty badges */}
-        <div className="flex gap-2 flex-wrap mb-4">
+        <div className="flex gap-2 flex-wrap">
           {route.difficulty.free && <span className="badge bg-blue-100 text-blue-800">Libre: {route.difficulty.free}</span>}
           {route.difficulty.mandatory && <span className="badge bg-orange-100 text-orange-800">Obligatorio: {route.difficulty.mandatory}</span>}
           {route.difficulty.aid && <span className="badge bg-purple-100 text-purple-800">Artificial: {route.difficulty.aid}</span>}
@@ -162,7 +163,7 @@ export function RouteDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 mb-4">
+        <div className="flex border-b border-gray-200">
           {(['info', 'comments', 'ascents'] as const).map((t) => (
             <button
               key={t}

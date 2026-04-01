@@ -71,7 +71,7 @@ export function FollowListPage() {
         Volver
       </button>
 
-      <h1 className="text-2xl font-bold mb-4">
+      <h1 className="text-2xl font-bold mb-6">
         {type === 'followers' ? 'Seguidores' : 'Siguiendo'}
       </h1>
 
