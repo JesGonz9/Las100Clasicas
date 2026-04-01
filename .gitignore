@@ -1,0 +1,11 @@
+node_modules
+dist
+.env
+*.local
+.vite
+specs.md
+cors.json
+serviceAccountKey.json
+*.firebase-adminsdk-*.json
+setUserRole.js
+clasicas-app-firebase-adminsdk-*.json
