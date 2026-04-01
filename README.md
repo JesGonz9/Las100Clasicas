@@ -7,11 +7,13 @@ Aplicación web de escalada para el tracking de vías del libro **"Las 100 Clás
 - **Autenticación** — Registro e inicio de sesión con email o Google
 - **Catálogo de vías** — Listado con búsqueda, filtros y detalle completo (dificultad libre/obligatoria/artificial, longitud, enlaces externos)
 - **Mapa interactivo** — Visualización de paredes con Leaflet, búsqueda por zona y navegación directa desde el detalle de vía
-- **Ascensiones** — Registro de ascensiones con fecha, valoración, compañeros y fotos
+- **Ascensiones** — Registro de ascensiones con fecha, valoración, compañeros y comentario
 - **Comentarios** — Comentarios en cada vía
-- **Social** — Seguir a otros usuarios, feed de actividad y notificaciones
-- **Perfiles** — Foto de perfil, bio y estadísticas
-- **Panel de administración** — CRUD completo de zonas, paredes, vías y logros con edición inline y búsqueda
+- **Social** — Seguir a otros usuarios, feed de actividad, ranking total y entre amigos, y notificaciones
+- **Perfiles** — Perfil propio y de otros usuarios con 3 pestañas: Progreso (estadísticas por zona), Logros (con barra de progreso en los no conseguidos) y Vías ascendidas
+- **Sistema de logros y puntos** — Logros desbloqueables por tipo (número de ascensiones, zonas, vías específicas) con cálculo automático de puntos
+- **Panel de administración** — CRUD completo de zonas, paredes, vías y logros con edición inline, búsqueda y edición de coordenadas en mapa interactivo
+- **Datos de prueba** — Herramienta de seed en el panel de admin para generar un entorno social realista con usuarios, ascensiones, follows y logros
 - **Diseño responsive** — Mobile-first con navegación inferior en móvil y sidebar en escritorio
 
 ## 🛠️ Stack
@@ -30,27 +32,34 @@ Aplicación web de escalada para el tracking de vías del libro **"Las 100 Clás
 
 ```
 app/
-├── public/              # Assets estáticos
+├── public/              # Assets estáticos (imágenes de fondo)
 ├── src/
 │   ├── app/             # Componente raíz y rutas
 │   ├── components/      # Componentes compartidos (Layout, Sidebar, BottomNav, Spinner...)
 │   ├── features/        # Módulos por funcionalidad
-│   │   ├── admin/       # Panel de administración
+│   │   ├── admin/       # Panel de administración + herramienta de seed
 │   │   ├── ascents/     # Registro de ascensiones
 │   │   ├── auth/        # Login y registro
-│   │   ├── dashboard/   # Dashboard principal
 │   │   ├── map/         # Mapa interactivo
-│   │   ├── profile/     # Perfil de usuario
+│   │   ├── profile/     # Perfil de usuario (3 pestañas: Progreso / Logros / Vías)
 │   │   ├── routes/      # Listado y detalle de vías
-│   │   └── social/      # Social, seguidores y notificaciones
+│   │   └── social/      # Social, ranking, seguidores y notificaciones
 │   ├── hooks/           # Custom hooks (useAuth, useAuthStore)
 │   ├── models/          # Tipos TypeScript
-│   ├── services/        # Firebase (auth, firestore, storage)
+│   ├── services/        # Firebase (auth, firestore, storage) + caché en memoria
 │   └── utils/           # Utilidades (cn)
 ├── package.json
 ├── tsconfig.json
 └── vite.config.ts
 ```
+
+## ⚡ Caché de datos estáticos
+
+Las colecciones que raramente cambian (rutas, zonas, paredes y logros) se cachean en memoria con un TTL de 10 minutos. La caché se invalida automáticamente cuando el administrador realiza cualquier modificación, evitando lecturas innecesarias a Firestore durante la sesión.
+
+## 🔐 Roles y permisos
+
+Los roles de usuario se gestionan mediante **custom claims de Firebase Auth** (`role: 'admin'`). Las reglas de Firestore verifican `request.auth.token.role == 'admin'` para proteger las operaciones de escritura en colecciones sensibles.
 
 ## 🚀 Instalación
 
