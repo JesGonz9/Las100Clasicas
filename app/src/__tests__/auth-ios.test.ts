@@ -43,8 +43,8 @@ vi.mock('../services/firebase/config', () => ({
 // ── helpers ─────────────────────────────────────────────────────────────────
 
 function setUserAgent(ua: string) {
-  Object.defineProperty(navigator, 'userAgent', {
-    value: ua,
+  Object.defineProperty(global.navigator, 'userAgent', {
+    get: () => ua,
     configurable: true,
   })
 }
