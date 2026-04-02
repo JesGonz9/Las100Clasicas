@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { Mountain, Search } from 'lucide-react'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
+import { Mountain, Search, ArrowLeft } from 'lucide-react'
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -56,6 +56,7 @@ function MapController({ focusWallId, walls }: { focusWallId: string | null; wal
 
 export function MapPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [routes, setRoutes] = useState<Route[]>([])
   const [zones, setZones] = useState<Zone[]>([])
@@ -124,6 +125,14 @@ export function MapPage() {
 
   return (
     <div className="h-[calc(100vh-4rem)] md:h-screen relative">
+      {/* Back button */}
+      <button
+        onClick={() => navigate(-1)}
+        className="absolute top-4 right-4 z-[1000] bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:bg-white transition-colors md:hidden"
+        aria-label="Volver"
+      >
+        <ArrowLeft className="h-5 w-5 text-gray-700" />
+      </button>
       {/* OpenStreetMap with Leaflet */}
       <MapContainer
         center={defaultCenter}

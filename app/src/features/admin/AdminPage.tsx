@@ -31,10 +31,11 @@ export function AdminPage() {
   const [tab, setTab] = useState<Tab>('routes')
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Administración</h1>
+    <div className="max-w-4xl mx-auto">
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-4 pt-4 pb-0 border-b border-white/40">
+      <h1 className="text-2xl font-bold mb-3">Administración</h1>
 
-      <div className="flex border-b border-gray-200 mb-6 overflow-x-auto">
+      <div className="flex overflow-x-auto">
         {([
           { key: 'routes' as const, label: 'Vías', icon: Mountain },
           { key: 'zones' as const, label: 'Zonas', icon: MapPinned },
@@ -56,7 +57,9 @@ export function AdminPage() {
           </button>
         ))}
       </div>
+      </div>
 
+      <div className="px-4 py-4">
       {tab === 'routes' && <RoutesAdmin />}
       {tab === 'zones' && <ZonesAdmin />}
       {tab === 'walls' && <WallsAdmin />}
@@ -64,6 +67,7 @@ export function AdminPage() {
       {tab === 'users' && <UsersAdmin />}
       {tab === 'import' && <ImportAdmin />}
       {tab === 'seed' && <SeedAdmin />}
+      </div>
     </div>
   )
 }

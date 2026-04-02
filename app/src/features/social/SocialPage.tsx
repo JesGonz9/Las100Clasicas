@@ -98,11 +98,12 @@ export function SocialPage() {
   }
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Social</h1>
+    <div className="max-w-2xl mx-auto">
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-4 pt-4 pb-0 border-b border-white/40">
+      <h1 className="text-2xl font-bold mb-4">Social</h1>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 mb-4">
+      <div className="flex border-b border-gray-200">
         <button
           onClick={() => setTab('feed')}
           className={`flex-1 text-center px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
@@ -128,6 +129,8 @@ export function SocialPage() {
           Ranking
         </button>
       </div>
+      </div>
+      <div className="px-4 py-3">
 
       {tab === 'search' && (
         <>
@@ -224,6 +227,7 @@ export function SocialPage() {
       )}
 
       {tab === 'ranking' && <RankingTab followingIds={followingIds} currentUserId={currentUser?.id ?? ''} />}
+      </div>
     </div>
   )
 }

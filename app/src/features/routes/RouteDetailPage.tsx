@@ -106,12 +106,13 @@ export function RouteDetailPage() {
     <div className="p-4 max-w-4xl mx-auto space-y-4">
       {/* Header */}
       <div className="bg-gradient-to-r from-slate-700/80 to-slate-500/60 backdrop-blur-sm rounded-xl p-4 sm:p-6 flex items-center gap-3 sm:gap-4">
-        <Link
-          to="/routes"
+        <button
+          onClick={() => navigate(-1)}
           className="bg-white/20 backdrop-blur-sm p-2 rounded-full hover:bg-white/30 transition-colors flex-shrink-0"
+          aria-label="Volver"
         >
           <ArrowLeft className="h-5 w-5 text-white" />
-        </Link>
+        </button>
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-bold text-white break-words">{route.name}</h1>

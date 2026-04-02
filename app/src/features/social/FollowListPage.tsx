@@ -65,16 +65,17 @@ export function FollowListPage() {
   }
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4">
-        <ArrowLeft className="h-4 w-4" />
-        Volver
-      </button>
-
-      <h1 className="text-2xl font-bold mb-6">
-        {type === 'followers' ? 'Seguidores' : 'Siguiendo'}
-      </h1>
-
+    <div className="max-w-2xl mx-auto">
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-4 pt-4 pb-4 border-b border-white/40">
+        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-2">
+          <ArrowLeft className="h-4 w-4" />
+          Volver
+        </button>
+        <h1 className="text-2xl font-bold">
+          {type === 'followers' ? 'Seguidores' : 'Siguiendo'}
+        </h1>
+      </div>
+      <div className="px-4 py-4">
       {users.length === 0 ? (
         <p className="text-gray-500 text-center py-8">
           {type === 'followers' ? 'Aún no tiene seguidores' : 'Aún no sigue a nadie'}
@@ -108,6 +109,7 @@ export function FollowListPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }

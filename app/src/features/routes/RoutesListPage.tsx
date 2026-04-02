@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Filter, Mountain, MapPinned, Layers, ChevronDown, ChevronRight, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, CheckCircle } from 'lucide-react'
+import { Search, Mountain, MapPinned, Layers, ChevronDown, ChevronRight, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, CheckCircle } from 'lucide-react'
 import { getRoutes, getZones, getWalls, getAscents } from '@/services/firebase'
 import { useAuth } from '@/hooks'
 import { Spinner, EmptyState } from '@/components'
@@ -9,7 +9,6 @@ import { cn } from '@/utils'
 
 type ViewMode = 'all' | 'zones' | 'walls'
 type SortMode = 'alpha-asc' | 'alpha-desc' | 'length-asc' | 'length-desc'
-type StatusFilter = 'todas' | 'hechas'
 
 function applySortRoutes(routes: Route[], sort: SortMode) {
   const sorted = [...routes]
@@ -37,11 +36,8 @@ export function RoutesListPage() {
   const [ascendedIds, setAscendedIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [selectedZone, setSelectedZone] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('all')
   const [sortMode, setSortMode] = useState<SortMode>('alpha-asc')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('todas')
   const { user } = useAuth()
 
   useEffect(() => {
@@ -63,16 +59,10 @@ export function RoutesListPage() {
     const q = search.toLowerCase()
     const zoneName = zones.find((z) => z.id === r.zoneId)?.name?.toLowerCase() ?? ''
     const wallName = walls.find((w) => w.id === r.wallId)?.name?.toLowerCase() ?? ''
-    const matchesSearch = r.name.toLowerCase().includes(q) || zoneName.includes(q) || wallName.includes(q)
-    const matchesZone = !selectedZone || r.zoneId === selectedZone
-    return matchesSearch && matchesZone
+    return r.name.toLowerCase().includes(q) || zoneName.includes(q) || wallName.includes(q)
   })
 
-  const afterStatus = statusFilter === 'hechas'
-    ? filtered.filter((r) => ascendedIds.has(r.id))
-    : filtered
-
-  const sorted = applySortRoutes(afterStatus, sortMode)
+  const sorted = applySortRoutes(filtered, sortMode)
 
   if (loading) {
     return (
@@ -83,115 +73,65 @@ export function RoutesListPage() {
   }
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Vías</h1>
-        <button onClick={() => setShowFilters(!showFilters)} className="btn-secondary flex items-center gap-2">
-          <Filter className="h-4 w-4" />
-          Filtros
-        </button>
-      </div>
+    <div className="max-w-4xl mx-auto">
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-4 pt-4 pb-3 border-b border-white/40">
+        <h1 className="text-2xl font-bold mb-3">Vías</h1>
 
-      {/* View mode tabs */}
-      <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1">
-        {([
-          { key: 'all' as const, label: 'Todas', icon: Mountain },
-          { key: 'zones' as const, label: 'Por zona', icon: MapPinned },
-          { key: 'walls' as const, label: 'Por pared', icon: Layers },
-        ]).map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            onClick={() => {
-              setViewMode(key)
-              if (key !== 'all' && sortMode.startsWith('length')) setSortMode('alpha-asc')
-            }}
-            className={cn(
-              'flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors',
-              viewMode === key ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700',
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Status filter tabs */}
-      {viewMode === 'all' && (
-        <div className="flex gap-1 mb-4 bg-gray-100 rounded-lg p-1">
+        {/* View mode tabs */}
+        <div className="flex gap-1 mb-3 bg-gray-100 rounded-lg p-1">
           {([
-            { key: 'todas' as const, label: 'Todas' },
-            { key: 'hechas' as const, label: 'Hechas' },
-          ]).map(({ key, label }) => (
+            { key: 'all' as const, label: 'Todas', icon: Mountain },
+            { key: 'zones' as const, label: 'Por zona', icon: MapPinned },
+            { key: 'walls' as const, label: 'Por pared', icon: Layers },
+          ]).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
-              onClick={() => setStatusFilter(key)}
+              onClick={() => {
+                setViewMode(key)
+                if (key !== 'all' && sortMode.startsWith('length')) setSortMode('alpha-asc')
+              }}
               className={cn(
-                'flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors',
-                statusFilter === key ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700',
+                'flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors',
+                viewMode === key ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700',
               )}
             >
-              {key === 'hechas' ? <CheckCircle className="h-4 w-4" /> : <Mountain className="h-4 w-4" />}
+              <Icon className="h-3.5 w-3.5" />
               {label}
             </button>
           ))}
         </div>
-      )}
 
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Buscar por nombre, zona o pared..."
-          className="input pl-10"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
-      {/* Sort selector */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => setSortMode((s) => s === 'alpha-asc' ? 'alpha-desc' : 'alpha-asc')}
-          className={cn('flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors', sortMode.startsWith('alpha') ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}
-        >
-          {sortMode === 'alpha-desc' ? <ArrowUpAZ className="h-4 w-4" /> : <ArrowDownAZ className="h-4 w-4" />}
-          Alfabético
-        </button>
-        {viewMode === 'all' && (
+        {/* Search + sort inline */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar..."
+              className="input pl-9 text-sm h-9"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
           <button
-            onClick={() => setSortMode((s) => s === 'length-asc' ? 'length-desc' : 'length-asc')}
-            className={cn('flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors', sortMode.startsWith('length') ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}
+            onClick={() => setSortMode((s) => s === 'alpha-asc' ? 'alpha-desc' : 'alpha-asc')}
+            title="Orden alfabético"
+            className={cn('flex items-center justify-center px-2 h-9 rounded-lg transition-colors flex-shrink-0', sortMode.startsWith('alpha') ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}
           >
-            {sortMode === 'length-desc' ? <ArrowUp01 className="h-4 w-4" /> : <ArrowDown01 className="h-4 w-4" />}
-            Longitud
+            {sortMode === 'alpha-desc' ? <ArrowUpAZ className="h-4 w-4" /> : <ArrowDownAZ className="h-4 w-4" />}
           </button>
-        )}
-      </div>
-
-      {showFilters && viewMode === 'all' && (
-        <div className="card mb-4 flex flex-wrap gap-2">
-          <button
-            onClick={() => setSelectedZone('')}
-            className={cn('badge cursor-pointer', !selectedZone ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700')}
-          >
-            Todas
-          </button>
-          {zones.map((z) => (
+          {viewMode === 'all' && (
             <button
-              key={z.id}
-              onClick={() => setSelectedZone(z.id)}
-              className={cn(
-                'badge cursor-pointer',
-                selectedZone === z.id ? 'bg-primary text-white' : 'bg-gray-100 text-gray-700',
-              )}
+              onClick={() => setSortMode((s) => s === 'length-asc' ? 'length-desc' : 'length-asc')}
+              title="Orden por longitud"
+              className={cn('flex items-center justify-center px-2 h-9 rounded-lg transition-colors flex-shrink-0', sortMode.startsWith('length') ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200')}
             >
-              {z.name}
+              {sortMode === 'length-desc' ? <ArrowUp01 className="h-4 w-4" /> : <ArrowDown01 className="h-4 w-4" />}
             </button>
-          ))}
+          )}
         </div>
-      )}
-
+      </div>
+      <div className="px-4 py-3">
       {viewMode === 'all' && (
         sorted.length === 0 ? (
           <EmptyState
@@ -215,6 +155,7 @@ export function RoutesListPage() {
       {viewMode === 'walls' && (
         <GroupedByWalls routes={sorted} zones={zones} walls={walls} ascending={sortMode !== 'alpha-desc'} ascendedIds={ascendedIds} />
       )}
+      </div>
     </div>
   )
 }

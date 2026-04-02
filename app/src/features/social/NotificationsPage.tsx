@@ -35,9 +35,11 @@ export function NotificationsPage() {
   }
 
   return (
-    <div className="p-4 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Notificaciones</h1>
-
+    <div className="max-w-2xl mx-auto">
+      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-md px-4 pt-4 pb-4 border-b border-white/40">
+        <h1 className="text-2xl font-bold">Notificaciones</h1>
+      </div>
+      <div className="px-4 py-4">
       {notifications.length === 0 ? (
         <EmptyState icon={<Bell className="h-12 w-12" />} title="Sin notificaciones" description="Aquí verás tus notificaciones" />
       ) : (
@@ -64,6 +66,7 @@ export function NotificationsPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   )
 }
