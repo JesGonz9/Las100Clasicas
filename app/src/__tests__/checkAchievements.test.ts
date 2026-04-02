@@ -11,7 +11,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ---- Firebase mocks (must be before any imports that use firebase) -------
-vi.mock('@/services/firebase/config', () => ({ db: 'mock-db' }))
+vi.mock('../services/firebase/config', () => ({ db: 'mock-db' }))
 
 vi.mock('firebase/firestore', () => ({
   getFirestore: vi.fn(() => 'mock-firestore'),

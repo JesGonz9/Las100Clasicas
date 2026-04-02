@@ -64,9 +64,10 @@ const DESKTOP_UA =
 // ── tests ────────────────────────────────────────────────────────────────────
 
 describe('signInWithGoogle – iOS detection', () => {
-  const originalUA = navigator.userAgent
+  let originalUA: string
 
   beforeEach(() => {
+    originalUA = navigator.userAgent
     vi.resetModules()
     mockSignInWithPopup.mockReset()
     mockSignInWithRedirect.mockReset()
@@ -121,9 +122,10 @@ describe('signInWithGoogle – iOS detection', () => {
 })
 
 describe('signInWithGoogle – iOS iPad detection', () => {
-  const originalUA = navigator.userAgent
+  let originalUA: string
 
   beforeEach(() => {
+    originalUA = navigator.userAgent
     mockSignInWithRedirect.mockReset()
     mockSignInWithPopup.mockReset()
   })
