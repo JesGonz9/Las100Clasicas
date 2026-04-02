@@ -5,6 +5,8 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   type User as FirebaseUser,
 } from 'firebase/auth'
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore'
@@ -31,9 +33,12 @@ export async function signIn(email: string, password: string) {
 
 const googleProvider = new GoogleAuthProvider()
 
-export async function signInWithGoogle() {
-  const credential = await signInWithPopup(auth, googleProvider)
-  const { uid, email, displayName, photoURL } = credential.user
+function isIOS() {
+  return /iP(hone|od|ad)/.test(navigator.userAgent)
+}
+
+async function ensureGoogleProfile(firebaseUser: FirebaseUser) {
+  const { uid, email, displayName, photoURL } = firebaseUser
   const existing = await getUserProfile(uid)
   if (!existing) {
     const user: User = {
@@ -45,6 +50,24 @@ export async function signInWithGoogle() {
       createdAt: Timestamp.now(),
     }
     await setDoc(doc(db, 'users', uid), user)
+  }
+}
+
+export async function signInWithGoogle() {
+  if (isIOS()) {
+    // On iOS Safari, popups are often blocked; use redirect flow instead
+    await signInWithRedirect(auth, googleProvider)
+    return null
+  }
+  const credential = await signInWithPopup(auth, googleProvider)
+  await ensureGoogleProfile(credential.user)
+  return credential
+}
+
+export async function getGoogleRedirectResult() {
+  const credential = await getRedirectResult(auth)
+  if (credential?.user) {
+    await ensureGoogleProfile(credential.user)
   }
   return credential
 }

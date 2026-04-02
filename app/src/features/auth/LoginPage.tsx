@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { signIn, signInWithGoogle } from '@/services/firebase'
+import { signIn, signInWithGoogle, getGoogleRedirectResult } from '@/services/firebase'
 import { Mountain } from 'lucide-react'
 import { BackgroundCarousel } from '@/components/BackgroundCarousel'
 
@@ -11,15 +11,28 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  // Handle the result after iOS redirect-based Google sign-in
+  useEffect(() => {
+    setLoading(true)
+    getGoogleRedirectResult()
+      .then((result) => {
+        if (result?.user) navigate('/routes')
+      })
+      .catch(() => {
+        setError('Error al iniciar sesión con Google')
+      })
+      .finally(() => setLoading(false))
+  }, [navigate])
+
   async function handleGoogle() {
     setError('')
     setLoading(true)
     try {
-      await signInWithGoogle()
-      navigate('/routes')
+      const result = await signInWithGoogle()
+      // signInWithGoogle returns null on iOS (redirect flow — page will reload)
+      if (result) navigate('/routes')
     } catch {
       setError('Error al iniciar sesión con Google')
-    } finally {
       setLoading(false)
     }
   }
