@@ -28,7 +28,7 @@ vi.mock('firebase/auth', () => ({
 }))
 
 vi.mock('firebase/firestore', () => ({
-  doc: (...args: unknown[]) => mockDoc(...args),
+  doc: (...args: unknown[]) => mockDoc(...(args as Parameters<typeof mockDoc>)),
   getDoc: (...args: unknown[]) => mockGetDoc(...args),
   setDoc: (...args: unknown[]) => mockSetDoc(...args),
   Timestamp: { now: () => ({ seconds: 0, nanoseconds: 0 }) },
