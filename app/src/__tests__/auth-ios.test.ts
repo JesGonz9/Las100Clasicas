@@ -42,11 +42,12 @@ vi.mock('../services/firebase/config', () => ({
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
-function setUserAgent(ua: string) {
-  Object.defineProperty(global.navigator, 'userAgent', {
-    get: () => ua,
-    configurable: true,
-  })
+function stubUA(ua: string) {
+  vi.stubGlobal('navigator', { userAgent: ua })
+}
+
+function restoreUA() {
+  vi.unstubAllGlobals()
 }
 
 const IOS_UA =
@@ -64,10 +65,7 @@ const DESKTOP_UA =
 // ── tests ────────────────────────────────────────────────────────────────────
 
 describe('signInWithGoogle – iOS detection', () => {
-  let originalUA: string
-
   beforeEach(() => {
-    originalUA = navigator.userAgent
     vi.resetModules()
     mockSignInWithPopup.mockReset()
     mockSignInWithRedirect.mockReset()
@@ -76,11 +74,11 @@ describe('signInWithGoogle – iOS detection', () => {
   })
 
   afterEach(() => {
-    setUserAgent(originalUA)
+    restoreUA()
   })
 
   it('calls signInWithRedirect on iPhone', async () => {
-    setUserAgent(IOS_UA)
+    stubUA(IOS_UA)
     mockSignInWithRedirect.mockResolvedValue(undefined)
 
     const { signInWithGoogle } = await import('../services/firebase/auth')
@@ -93,7 +91,7 @@ describe('signInWithGoogle – iOS detection', () => {
   })
 
   it('calls signInWithPopup on Android', async () => {
-    setUserAgent(ANDROID_UA)
+    stubUA(ANDROID_UA)
     const fakeUser = { uid: 'u1', email: 'a@b.com', displayName: 'Ana', photoURL: null }
     mockSignInWithPopup.mockResolvedValue({ user: fakeUser })
     mockGetDoc.mockResolvedValue({ exists: () => true, data: () => ({}), id: 'u1' })
@@ -107,7 +105,7 @@ describe('signInWithGoogle – iOS detection', () => {
   })
 
   it('calls signInWithPopup on desktop', async () => {
-    setUserAgent(DESKTOP_UA)
+    stubUA(DESKTOP_UA)
     const fakeUser = { uid: 'u2', email: 'b@c.com', displayName: 'Bob', photoURL: '' }
     mockSignInWithPopup.mockResolvedValue({ user: fakeUser })
     mockGetDoc.mockResolvedValue({ exists: () => true, data: () => ({}), id: 'u2' })
@@ -122,20 +120,17 @@ describe('signInWithGoogle – iOS detection', () => {
 })
 
 describe('signInWithGoogle – iOS iPad detection', () => {
-  let originalUA: string
-
   beforeEach(() => {
-    originalUA = navigator.userAgent
     mockSignInWithRedirect.mockReset()
     mockSignInWithPopup.mockReset()
   })
 
   afterEach(() => {
-    setUserAgent(originalUA)
+    restoreUA()
   })
 
   it('calls signInWithRedirect on iPad', async () => {
-    setUserAgent(
+    stubUA(
       'Mozilla/5.0 (iPad; CPU OS 16_0 like Mac OS X) AppleWebKit/605.1.15 ' +
         '(KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
     )
@@ -149,7 +144,7 @@ describe('signInWithGoogle – iOS iPad detection', () => {
   })
 
   it('calls signInWithRedirect on iPod', async () => {
-    setUserAgent('Mozilla/5.0 (iPod touch; CPU iPhone OS 15_0 like Mac OS X)')
+    stubUA('Mozilla/5.0 (iPod touch; CPU iPhone OS 15_0 like Mac OS X)')
     mockSignInWithRedirect.mockResolvedValue(undefined)
 
     const { signInWithGoogle } = await import('../services/firebase/auth')

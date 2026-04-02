@@ -34,6 +34,7 @@ export async function signIn(email: string, password: string) {
 const googleProvider = new GoogleAuthProvider()
 
 function isIOS() {
+  if (typeof navigator === 'undefined') return false
   return /iP(hone|od|ad)/.test(navigator.userAgent)
 }
 
